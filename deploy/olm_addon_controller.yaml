@@ -1,0 +1,24 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: olm-addon-controller
+  labels:
+    app: olm-addon-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: olm-addon-controller
+  template:
+    metadata:
+      labels:
+        app: olm-addon-controller
+    spec:
+      serviceAccountName: olm-addon-sa
+      containers:
+      - name: olm-addon-controller
+        image: quay.io/fgiloux/olm-addon-controller
+        imagePullPolicy: IfNotPresent
+        args:
+          - "/olm-addon-controller"

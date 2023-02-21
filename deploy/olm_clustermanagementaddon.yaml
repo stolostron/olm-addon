@@ -1,0 +1,8 @@
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: ClusterManagementAddOn
+metadata:
+  name: olm-addon
+spec:
+  addOnMeta:
+    displayName: OLM Addon
+    description: "olm-addon is a PoC leveraging the addon mechanism to deploy OLM on managed clusters"

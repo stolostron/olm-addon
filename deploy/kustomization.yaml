@@ -1,0 +1,16 @@
+---
+namespace: open-cluster-management
+
+resources:
+- cluster_role.yaml
+- cluster_role_binding.yaml
+- service_account.yaml
+- olm_clustermanagementaddon.yaml
+- olm_addon_controller.yaml
+
+images:
+  - name: quay.io/fgiloux/olm-addon-controller
+    newName: quay.io/fgiloux/olm-addon-controller
+    newTag: latest
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
