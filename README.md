@@ -12,5 +12,5 @@ This project is a proof of concept. It aims to demonstrate how OLM can easily ge
 
 ## Installation and configuration
 
-To come soon
+Instructions for setting up a local development or test environment, deploying OLM addon agent and using it for installing OLM on spoke clusters are available in [SETUP.md](./SETUP.md)
 
