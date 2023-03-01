@@ -7,10 +7,10 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:
 - apiGroups: ["operators.coreos.com"]
-  resources: ["subscriptions","clusterserviceversions", "catalogsources", "installplans"]
-  verbs: ["create", "update", "patch", "delete"]
+  resources: ["operatorgroups", "subscriptions", "clusterserviceversions", "catalogsources", "installplans", "olmconfigs"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
 ---
-# Allow the Klusterlet to create resources using the newly provisioned API 
+# Allow the Klusterlet to create resources using the newly provisioned API
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

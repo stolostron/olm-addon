@@ -1,4 +1,4 @@
-package agent
+package manager
 
 import (
 	"bufio"
@@ -29,7 +29,7 @@ const (
 
 var manifestFiles = [3]string{"manifests/crds.yaml", "manifests/permissions.yaml", "manifests/olm.yaml"}
 
-// Another agent with registration enabled.
+// An agent with registration enabled.
 type OLMAgent struct {
 	AddonClient  addonv1alpha1client.Interface
 	AddonName    string

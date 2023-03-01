@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/go/pkg/mod,z \
 
 # Copy the source
 COPY main.go .
-COPY agent/ agent/
+COPY pkg/ pkg/
 COPY manifests/ manifests/
 
 # Build
@@ -30,7 +30,7 @@ COPY manifests/ manifests/
 ENV GOFLAGS=-mod=readonly
 RUN --mount=type=cache,target=/root/.cache/go-build,z \
     --mount=type=cache,target=/go/pkg/mod,z \
-    CGO_ENABLED=0 go build -a -o olm-addon-controller 
+    CGO_ENABLED=0 go build -a -o olm-addon-controller
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details

@@ -200,5 +200,8 @@ olm-operator-7456f86476-p2g87       1/1     Running   0          1m
 operatorhubio-catalog-zg66w         1/1     Running   0          1m
 ~~~
 
-> **Warning**
-> The manifestworkvalidators webhook prevents the addition of the CustomResourceDefinition of the ClusterServiceVersion API to a ManifestWork due to its size. A [GitHub issue](https://github.com/open-cluster-management-io/work/issues/185) has been created. For this PoC the webhook has been deactivated to let the creation of the resource succeed.
+> **Note**
+>
+> OLM is only installed on non-OpenShift clusters. The `vendor` label needs to be set on the managedCluster resource and to a value different than `OpenShift` for the installation to take place:
+>
+> `$ kubectl label managedcluster cluster1 vendor=Kubernetes.`
