@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"embed"
+	"fmt"
 	"io"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/klog/v2"
 
@@ -26,9 +28,10 @@ const (
 	ManagedClusterInstallLabel      = "addons.open-cluster-management.io/non-openshift"
 	ManagedClusterInstallLabelValue = "true"
 	OpenShiftVendor                 = "OpenShift"
+	defaultVersion                  = "v1.25"
 )
 
-var manifestFiles = [3]string{"manifests/crds.yaml", "manifests/permissions.yaml", "manifests/olm.yaml"}
+var manifestFiles = [3]string{"crds.yaml", "permissions.yaml", "olm.yaml"}
 
 // OLMAgent implements the AgentAddon interface and contains the addon configuration.
 type OLMAgent struct {
@@ -43,14 +46,25 @@ type OLMAgent struct {
 func (o *OLMAgent) Manifests(cluster *clusterv1.ManagedCluster,
 	addon *addonapiv1alpha1.ManagedClusterAddOn) ([]runtime.Object, error) {
 	if !clusterSupportsAddonInstall(cluster) {
-		klog.InfoS("Cluster may be OpenShift, not deploying olm addon. Please label the cluster with a \"vendor\" value different from \"OpenShift\" otherwise.", "addonName",
+		klog.V(1).InfoS("Cluster may be OpenShift, not deploying olm addon. Please label the cluster with a \"vendor\" value different from \"OpenShift\" otherwise.", "addonName",
 			o.AddonName, "cluster", cluster.GetName())
 		return []runtime.Object{}, nil
 	}
 
+	// Pick a different set of manifests according to the version
+	kubeVersion, err := version.ParseSemantic(cluster.Status.Version.Kubernetes)
+	if err != nil {
+		klog.ErrorS(err, "Not able to parse the cluster version, using default", "cluster",
+			cluster.GetName(), "version", cluster.Status.Version.Kubernetes)
+		kubeVersion, _ = version.ParseSemantic(defaultVersion)
+	}
+	klog.V(1).InfoS("Cluster version", "cluster",
+		cluster.GetName(), "version", kubeVersion.String())
+
 	objects := []runtime.Object{}
 	// Keep the ordering defined in the file list and content
 	for _, file := range manifestFiles {
+		file = fmt.Sprintf("manifests/v%d.%d/%s", kubeVersion.Major(), kubeVersion.Minor(), file)
 		fileContent, err := loadManifestsFromFile(file, o.OLMManifests)
 		if err != nil {
 			return nil, err

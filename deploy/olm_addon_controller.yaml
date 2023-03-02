@@ -21,4 +21,4 @@ spec:
         image: quay.io/fgiloux/olm-addon-controller
         imagePullPolicy: Always
         args:
-          - "/olm-addon-controller"
+          - -v=1

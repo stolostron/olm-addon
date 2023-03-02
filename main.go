@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"flag"
 	"os"
 
 	restclient "k8s.io/client-go/rest"
@@ -22,7 +23,10 @@ const (
 var FS embed.FS
 
 func main() {
-	klog.Info("starting: %s", addonName)
+	klog.InitFlags(flag.CommandLine)
+	flag.Parse()
+
+	klog.Info("starting ", addonName)
 
 	kubeconfig, err := restclient.InClusterConfig()
 	if err != nil {

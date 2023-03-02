@@ -65,6 +65,8 @@ metadata:
   namespace: olm
   labels:
     app: olm-operator
+  annotations:
+    version: "v1.23"
 spec:
   strategy:
     type: RollingUpdate
