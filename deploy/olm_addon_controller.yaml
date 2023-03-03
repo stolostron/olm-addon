@@ -15,6 +15,10 @@ spec:
       labels:
         app: olm-addon-controller
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: olm-addon-sa
       containers:
       - name: olm-addon-controller
@@ -22,3 +26,7 @@ spec:
         imagePullPolicy: Always
         args:
           - -v=1
+        securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ "ALL" ]

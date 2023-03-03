@@ -89,6 +89,11 @@ $ kind create cluster --name kind-hub --kubeconfig /tmp/kind-hub.kubeconfig --co
 $ kind create cluster --name kind-spoke --kubeconfig /tmp/kind-spoke.kubeconfig --config /tmp/kind-spoke.cfg
 ~~~
 
+It is possible to test with a specific Kubernetes version by using `--image`, e.g.:
+~~~
+$ kind create cluster --name kind-spoke2 --kubeconfig /tmp/kind-spoke2.kubeconfig --config /tmp/kind-spoke2.cfg --image "kindest/node:v1.23.13"
+~~~
+
 ### Deployment of the Registration Operator
 
 First, you need to clone [the repository of the Registration Operator](https://github.com/open-cluster-management-io/registration-operator)
@@ -102,7 +107,7 @@ It is possible to use a specific image version rather than the latest one. This 
 $ export IMAGE_TAG=v0.10.0
 ~~~
 
-Deployment of the hub components on the hub cluster
+Deployment of the hub components on the hub cluster.
 ~~~
 $ KUBECONFIG=/tmp/kind-hub.kubeconfig make deploy-hub
 $ KUBECONFIG=/tmp/kind-hub.kubeconfig kubectl get pods -n open-cluster-management
@@ -110,12 +115,17 @@ NAME                               READY   STATUS    RESTARTS   AGE
 cluster-manager-6476957ff8-w4f7s   1/1     Running   0          58s
 ~~~
 
-Deployment of the managed cluster components on the spoke cluster
+Deployment of the managed cluster components on the spoke cluster.
 ~~~
 $ KUBECONFIG=/tmp/kind-spoke.kubeconfig make deploy-spoke
 $ KUBECONFIG=/tmp/kind-spoke.kubeconfig kubectl -n open-cluster-management get pods
 NAME                          READY   STATUS    RESTARTS   AGE
 klusterlet-66cf676579-mz6t2   1/1     Running   0          47s
+~~~
+
+An environment variable can be used to register a second spoke cluster with a different name.
+~~~
+$ MANAGED_CLUSTER_NAME=cluster2 KUBECONFIG=/tmp/kind-spoke2.kubeconfig make deploy-spoke
 ~~~
 
 Next, a CertificateSigningRequest (CSR) was created for the spoke cluster on the hub cluster that needs to be accepted.
