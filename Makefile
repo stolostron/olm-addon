@@ -1,7 +1,9 @@
 IMAGE ?= olm-addon-controller
+CLEANER_IMAGE ?= olm-addon-cleaner
 IMAGE_REGISTRY ?= quay.io/fgiloux
 IMAGE_TAG ?= latest
 IMG ?= $(IMAGE_REGISTRY)/$(IMAGE):$(IMAGE_TAG)
+CLEANER_IMG ?= $(IMAGE_REGISTRY)/$(CLEANER_IMAGE):$(IMAGE_TAG)
 
 OS := $(shell go env GOOS)
 ARCH := $(shell go env GOARCH)
@@ -17,12 +19,14 @@ build: ## Build the project binaries
 .PHONY: docker-build
 docker-build: ## Build docker image
 	docker build -t ${IMG} .
+	docker build -t ${CLEANER_IMG} -f cleaner-Dockerfile
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+	docker push ${CLEANER_IMG}
 
-.PHONY: deploy 
+.PHONY: deploy
 deploy:
 	kubectl apply -k deploy
 

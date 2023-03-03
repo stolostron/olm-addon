@@ -31,7 +31,7 @@ const (
 	defaultVersion                  = "v1.25"
 )
 
-var manifestFiles = [3]string{"crds.yaml", "permissions.yaml", "olm.yaml"}
+var manifestFiles = [4]string{"crds.yaml", "permissions.yaml", "olm.yaml", "cleanup.yaml"}
 
 // OLMAgent implements the AgentAddon interface and contains the addon configuration.
 type OLMAgent struct {

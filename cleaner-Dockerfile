@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1.4
+
+# Use UBI minimal as base image with a batch and add kubectl
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7
+USER 0:0
+WORKDIR /
+RUN curl -L -o /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    chmod 755 /usr/local/bin/kubectl
+COPY cleanup.sh .
+RUN chown 65532:65532 cleanup.sh
+RUN chmod 755 /cleanup.sh
+
+USER 65532:65532
