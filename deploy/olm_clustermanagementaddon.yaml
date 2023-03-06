@@ -6,3 +6,9 @@ spec:
   addOnMeta:
     displayName: OLM Addon
     description: "olm-addon is a PoC leveraging the addon mechanism to deploy OLM on managed clusters"
+  supportedConfigs:
+  - group: addon.open-cluster-management.io
+    resource: addondeploymentconfigs
+    defaultConfig:
+      name: olm-addon-default-config
+      namespace: open-cluster-management

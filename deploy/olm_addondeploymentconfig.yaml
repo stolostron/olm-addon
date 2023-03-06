@@ -1,0 +1,15 @@
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: AddOnDeploymentConfig
+metadata:
+  name: olm-addon-default-config
+spec:
+  customizedVariables:
+  - name: OLMImage
+    value: quay.io/operator-framework/olm@sha256:3cfc40fa4b779fe1d9817dc454a6d70135e84feba1ffc468c4e434de75bb2ac5
+  nodePlacement:
+    nodeSelector:
+      kubernetes.io/os: linux
+    tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/infra
+      operator: Exists

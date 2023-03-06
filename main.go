@@ -43,11 +43,12 @@ func main() {
 		klog.ErrorS(err, "unable to setup addon manager")
 		os.Exit(1)
 	}
-	err = addonMgr.AddAgent(&manager.OLMAgent{
-		AddonClient:  addonClient,
-		AddonName:    addonName,
-		OLMManifests: FS,
-	})
+	olmAgent, err := manager.NewOLMAgent(addonClient, addonName, FS)
+	if err != nil {
+		klog.ErrorS(err, "unable to create the olm agent")
+		os.Exit(1)
+	}
+	err = addonMgr.AddAgent(&olmAgent)
 	if err != nil {
 		klog.ErrorS(err, "unable to add addon agent to manager")
 		os.Exit(1)
