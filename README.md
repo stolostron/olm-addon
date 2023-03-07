@@ -14,3 +14,5 @@ This project is a proof of concept. It aims to demonstrate how OLM can easily ge
 
 Instructions for setting up a local development or test environment, deploying OLM addon agent and using it for installing OLM on spoke clusters are available in [SETUP.md](./SETUP.md)
 
+The addon can be configured to get the OLM components placed on desired nodes through the usual Kubernetes mechanisms: [node selectors](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) and [taints and tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+Instructions for configuring the addon are available in [CONFIGURATION.md](./CONFIGURATION.md)
