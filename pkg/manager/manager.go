@@ -242,8 +242,8 @@ func setConfiguration(obj runtime.Object, config addonfactory.Values) {
 	}
 	if csv, ok := obj.(*olmv1alpha1.ClusterServiceVersion); ok {
 		if nodeSelector, ok := config["NodeSelector"]; ok {
-			for _, deplSpec := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
-				deplSpec.Spec.Template.Spec.NodeSelector = nodeSelector.(map[string]string)
+			for i := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
+				csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[i].Spec.Template.Spec.NodeSelector = nodeSelector.(map[string]string)
 			}
 		}
 		if tolerations, ok := config["Tolerations"]; ok {
