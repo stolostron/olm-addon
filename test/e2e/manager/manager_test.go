@@ -7,8 +7,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"k8s.io/client-go/kubernetes"
 
 	"open-cluster-management.io/addon-framework/pkg/addonmanager/constants"
 	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
@@ -61,16 +67,45 @@ func TestInstallation(t *testing.T) {
 		require.NoError(t, err, "failed getting the ManagedClusterAddOn resource to deploy OLM")
 		return ConditionIsTrue(addon.Status.Conditions, constants.AddonManifestApplied)
 	}, wait.ForeverTestTimeout, 100*time.Millisecond, "expected ManagedClusterAddOn to have the ManifestApplied condition")
+	// Check that OLM is running
+	coreClient, err := kubernetes.NewForConfig(cluster.ClientConfig(t))
+	require.NoError(t, err, "failed creating a client for common resources")
+	require.Eventually(t, func() bool {
+		packageServerDepl, err := coreClient.AppsV1().Deployments("olm").Get(ctx, "packageserver", metav1.GetOptions{})
+		if err != nil {
+			return false
+		}
+		return DeplConditionIsTrue(packageServerDepl.Status.Conditions, appsv1.DeploymentAvailable)
+	}, 60*time.Second, 100*time.Millisecond, "expected the packageserver deployment to have the minimum number of replicas available")
+
+	// Uninstall
+	err = addonClient.ManagedClusterAddOns("cluster1").Delete(ctx, addon.Name, metav1.DeleteOptions{})
+	require.NoError(t, err, "failed deleting the ManagedClusterAddOn resource to uninstall OLM")
+	require.Eventually(t, func() bool {
+		_, err = coreClient.CoreV1().Namespaces().Get(ctx, "olm", metav1.GetOptions{})
+		return err != nil && apierrors.IsNotFound(err)
+	}, wait.ForeverTestTimeout, 100*time.Millisecond, "expected OLM to be uninstalled and the olm namespace removed")
 }
 
 func ConditionIsTrue(conditions []metav1.Condition, t string) bool {
 	if conditions == nil {
 		return false
 	}
-
 	for _, condition := range conditions {
 		if condition.Type == t {
 			return condition.Status == metav1.ConditionTrue
+		}
+	}
+	return false
+}
+
+func DeplConditionIsTrue(conditions []appsv1.DeploymentCondition, t appsv1.DeploymentConditionType) bool {
+	if conditions == nil {
+		return false
+	}
+	for _, condition := range conditions {
+		if condition.Type == t {
+			return condition.Status == corev1.ConditionTrue
 		}
 	}
 	return false
