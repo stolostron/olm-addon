@@ -1,4 +1,4 @@
-apiVersion: addon.open-cluster-management.io/v1alpha1
+apiVersion: addon.open-cluster-management.io/v1beta1
 kind: ClusterManagementAddOn
 metadata:
   name: olm-addon
@@ -6,6 +6,13 @@ spec:
   addOnMeta:
     displayName: OLM Addon
     description: "olm-addon is a PoC leveraging the addon mechanism to deploy OLM on managed clusters"
+  # Uncomment the following lines for automated deployment.
+  # Follow changes mentioned in kustomization.yaml for Placement creation.
+  installStrategy:
+    type: Placements
+    placements:
+    - name: non-openshift
+      namespace: default
   supportedConfigs:
   - group: addon.open-cluster-management.io
     resource: addondeploymentconfigs

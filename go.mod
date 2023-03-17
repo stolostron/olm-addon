@@ -9,6 +9,7 @@ require (
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
 	k8s.io/klog/v2 v2.90.0
+	k8s.io/kubernetes v1.26.1
 	open-cluster-management.io/addon-framework v0.6.1
 	open-cluster-management.io/api v0.10.1-0.20230216050312-b716d4a5c514
 )

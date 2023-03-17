@@ -215,3 +215,21 @@ operatorhubio-catalog-zg66w         1/1     Running   0          1m
 > OLM is only installed on non-OpenShift clusters. The `vendor` label needs to be set on the managedCluster resource and to a value different than `OpenShift` for the installation to take place:
 >
 > `$ kubectl label managedcluster cluster1 vendor=Kubernetes.`
+
+### Automated deployment
+
+It is possible to leverage the Placement API to get a ManagedClusterAddOn automatically created, hence OLM deployed for any new cluster meeting a specific condition, i.e having the label vendor not set to OpenShift in its managedcluster resource.
+
+An example of such a Placement is available in [deploy/placement.yaml](./deploy/placement.yaml). This Placement can then be referenced in the installStrategy of the [ClusterManagementAddOn resource](./deploy/olm_clustermanagementaddon.yaml).
+
+~~~
+  installStrategy:
+    type: Placements
+    placements:
+    - name: non-openshift
+      namespace: default
+~~~
+
+> **Note**
+>
+> This is new development and not currently working as expected (addon-framework v0.6.1).

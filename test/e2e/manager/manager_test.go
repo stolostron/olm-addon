@@ -66,7 +66,7 @@ func TestInstallation(t *testing.T) {
 		addon, err = addonClient.ManagedClusterAddOns("cluster1").Get(ctx, addon.Name, metav1.GetOptions{})
 		require.NoError(t, err, "failed getting the ManagedClusterAddOn resource to deploy OLM")
 		return ConditionIsTrue(addon.Status.Conditions, constants.AddonManifestApplied)
-	}, wait.ForeverTestTimeout, 100*time.Millisecond, "expected ManagedClusterAddOn to have the ManifestApplied condition")
+	}, 60*time.Second, 100*time.Millisecond, "expected ManagedClusterAddOn to have the ManifestApplied condition")
 	// Check that OLM is running
 	coreClient, err := kubernetes.NewForConfig(cluster.ClientConfig(t))
 	require.NoError(t, err, "failed creating a client for common resources")

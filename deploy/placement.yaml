@@ -1,0 +1,14 @@
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: non-openshift
+  namespace: default
+spec:
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+          - key: vendor
+            operator: NotIn
+            values:
+            - OpenShift

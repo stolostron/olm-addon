@@ -7,6 +7,10 @@ resources:
 - service_account.yaml
 - olm_clustermanagementaddon.yaml
 - olm_addon_controller.yaml
+# Uncomment the following lines for creating a Placement that can be used globally
+# and referenced in olm_clustermanagementaddon.yaml
+# - placement.yaml
+# - managedclustersetbinding.yaml
 
 images:
   - name: quay.io/fgiloux/olm-addon-controller
