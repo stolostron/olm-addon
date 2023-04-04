@@ -4,7 +4,6 @@ set -o errexit
 
 export DEMO_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-
 source ${DEMO_DIR}/demo-magic
 source ${DEMO_DIR}/helper.sh
 
@@ -30,7 +29,7 @@ kubectl-hub() {
 }
 
 kubectl-s1() {
-  kubectl --kubeconfig=${DEMO_DIR}/.demo/spoke1.kubeconfig $@
+  kubectl --kubeconfig=${DEMO_DIR}/.demo/spoke1.kubeconfig "$@"
 }
 
 kubectl-s2() {
@@ -161,3 +160,36 @@ c "And check that the operator is getting installed."
 pe "kubectl-s1 get pods -n operators"
 pe "kubectl-s1 get crds | grep postgres"
 
+c "The installed version of the operator is on purpose not the latest."
+c "Let's look at the installplans."
+pe "kubectl-s1 get installplans -n operators"
+c "Besides the installplan we have just approved there is one for a newer version."
+c "This matches the latest version in the channel we have subscribed to."
+c "We have it here right away as we purposefully installed an older version."
+c "This would however automatically pops up when the operator authors publish a new version to the channel the subscription is for."
+c "Getting it installed is as simple as just approving the new installplan."
+
+installplans=$(kubectl-s1 get installplans -n operators -o=jsonpath='{range .items[*]}{@.metadata.name}{" "}{@.spec.approved}{"\n"}{end}')
+while IFS= read -r line; do
+  array=($line)
+  if [ "${array[1]}" = "false" ];
+  then
+    installplan="${array[0]}"
+  fi
+done <<< "$installplans"
+pe "kubectl-s1 patch installplans ${installplan} -n operators --type='merge' -p \"{\\\"spec\\\":{\\\"approved\\\":true}}\""
+c "Let's check that the operator is getting updated."
+pe "kubectl-s1 get csv -n operators"
+pe "kubectl-s1 get pods -n operators"
+
+}
+
+c "Let's uninstall the operator by deleting the subscription and the clusterserviceversion."
+csv=$(kubectl-s1 get csv -n operators -o name)
+sub=$(kubectl-s1 get subscription -n operators -o name)
+pe "kubectl-s1 delete $sub -n operators"
+pe "kubectl-s1 delete $csv -n operators"
+c "And check that the operator is deleted."
+pe "kubectl-s1 get pods -n operators"
+
+# TODO (if time allows): Uninstall OLM 
