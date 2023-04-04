@@ -54,7 +54,7 @@ pe "make deploy"
 popd &>/dev/null
 
 c "We can now specify that OLM is to be deployed on our clusters. This can also be done once using OCM Placement API."
-pe "cat <<EOF | oc apply -f -
+pe "cat <<EOF | kubectl-hub apply -f -
 apiVersion: addon.open-cluster-management.io/v1alpha1
 kind: ManagedClusterAddOn
 metadata:
@@ -65,7 +65,7 @@ spec:
 EOF
 "
 
-pe "cat <<EOF | oc apply -f -
+pe "cat <<EOF | kubectl-hub apply -f -
 apiVersion: addon.open-cluster-management.io/v1alpha1
 kind: ManagedClusterAddOn
 metadata:
@@ -92,7 +92,7 @@ pe "kubectl-hub get addondeploymentconfigs -o yaml"
 c "Here we have node placement configured globally."
 
 c "Let's specify a different OLM image for the spoke1 cluster only to simulate a canary deployment."
-pe "cat <<EOF | oc apply -f -
+pe "cat <<EOF | kubectl-hub apply -f -
 apiVersion: addon.open-cluster-management.io/v1alpha1
 kind: AddOnDeploymentConfig
 metadata:
@@ -117,5 +117,47 @@ c "Let's check that the new image has been deployed on spoke1 and not spoke2."
 pe "kubectl-s1 get pods -A -o wide"
 pe "kubectl-s2 get pods -A -o wide"
 
+# TODO: Add configuration of catalogs to the demo when ready
+
 c "Now it is becoming interesting :-)"
+c "Let's look at what we can do with OLM on the managed clusters."
+c "2 operational models are supported:"
+c "  - the managed cluster is handed over to an application team, that interacts directly with it"
+c "  - the installation of operators and the management of their lifecycle stays centralized\n"
+
+c "Let's look at OLM catalogs and what they provide"
+pe "kubectl-s1 get catalogsources -n olm"
+c "The default catalog is for community operators available on operatorhub.io."
+c "Users are free to prevent the installation of this catalog and to have their own curated catalog instead."
+
+c "Here is the content of this catalog."
+pe "kubectl-s1 get packagemanifests | more"
+c "That's quite a few of them"
+
+c "Let's pick one of them and install it by creating a subscription."
+pe "cat <<EOF | kubectl-s1 apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: my-postgresql
+  namespace: operators
+spec:
+  channel: v5
+  name: postgresql
+  source: operatorhubio-catalog
+  sourceNamespace: olm
+  # OLM can automatically update the operator to the latest and greatest version available
+  # or the user may decide to manually approve updates and possibly pin the operator
+  # to a validated and trusted version like here.
+  installPlanApproval: Manual
+  startingCSV: postgresoperator.v5.2.0
+EOF
+"
+
+c "Let's approve the installation."
+installplan=$(kubectl-s1 get installplans -n operators -o name)
+pe "kubectl-s1 patch ${installplan} -n operators --type='merge' -p \"{\\\"spec\\\":{\\\"approved\\\":true}}\""
+c "And check that the operator is getting installed."
+pe "kubectl-s1 get pods -n operators"
+pe "kubectl-s1 get crds | grep postgres"
 
