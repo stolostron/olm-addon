@@ -37,20 +37,85 @@ kubectl-s2() {
   kubectl --kubeconfig=${DEMO_DIR}/.demo/spoke2.kubeconfig $@
 }
 
-
-
 c "Hi, glad that you are looking at the OLM everywhere demo!"
-c "Operator Lifecycle Management (OLM) is handy for installing and managing operators from curated catalogs.\n"
-
-c "For this demo we have 3 clusters: one management and two managed ones."
+c "Operator Lifecycle Management (OLM) is handy for installing and managing operators from curated catalogs."
+c "It comes pre-installed with OpenShift but works well with other Kubernetes distributions too.\n"
+c "For this demo we have 3 kind clusters: one management and two managed ones."
 pe "kind get clusters"
 
-c "OCM components are running on these clusters."
+c "Open Cluster Management (OCM) components are running on these clusters."
+c "OCM provides a central point for managing multi-clouds multi-scenarios Kubernetes clusters."
 pe "kubectl-hub get pods -A"
 
 c "Let's start with the OLM-addon installation."
-c "OLM-addon is based on the OCM extension mechanism to allow installation, configuration and update of OLM on managed clusters."
+c "OLM-addon is based on the OCM extension mechanism (addon framework). It allows installation, configuration and update of OLM on managed clusters."
 pushd ${DEMO_DIR}/.. &>/dev/null
 pe "make deploy"
 popd &>/dev/null
+
+c "We can now specify that OLM is to be deployed on our clusters. This can also be done once using OCM Placement API."
+pe "cat <<EOF | oc apply -f -
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: ManagedClusterAddOn
+metadata:
+ name: olm-addon
+ namespace: spoke1
+spec:
+ installNamespace: open-cluster-management-agent-addon
+EOF
+"
+
+pe "cat <<EOF | oc apply -f -
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: ManagedClusterAddOn
+metadata:
+ name: olm-addon
+ namespace: spoke2
+spec:
+ installNamespace: open-cluster-management-agent-addon
+EOF
+"
+
+c "OLM has not been installed on the spoke clusters yet."
+c "It only gets installed on clusters with the vendor label set to something else than OpenShift."
+pe "kubectl-s1 get pods -A -o wide"
+
+c "Let's label our clusters."
+pe "kubectl label managedclusters spoke1 spoke2 vendor=kind --overwrite"
+
+c "Let's check that OLM has now been installed on the spoke clusters."
+pe "kubectl-s1 get pods -A -o wide"
+pe "kubectl-s2 get pods -A -o wide"
+
+c "OLM deployments can be configured globally, per cluster or set of clusters."
+pe "kubectl-hub get addondeploymentconfigs -o yaml"
+c "Here we have node placement configured globally."
+
+c "Let's specify a different OLM image for the spoke1 cluster only to simulate a canary deployment."
+pe "cat <<EOF | oc apply -f -
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: AddOnDeploymentConfig
+metadata:
+  name: olm-release-0.24-0
+  namespace: default
+spec:
+# OLMImage
+# the same image is used for
+# - olm-operator
+# - catalog-operator
+# - packageserver
+# here it is the image for OLM release v0.24.0
+  customizedVariables:
+  - name: OLMImage
+    value: quay.io/operator-framework/olm@sha256:f9ea8cef95ac9b31021401d4863711a5eec904536b449724e0f00357548a31e7
+EOF
+"
+
+pe "kubectl-hub patch managedclusteraddon -n spoke1 olm-addon --type='merge' -p \"{\\\"spec\\\":{\\\"configs\\\":[{\\\"group\\\":\\\"addon.open-cluster-management.io\\\",\\\"resource\\\":\\\"addondeploymentconfigs\\\",\\\"name\\\":\\\"olm-release-0-24-0\\\",\\\"namespace\\\":\\\"default\\\"}]}}\""
+
+c "Let's check that the new image has been deployed on spoke1 and not spoke2."
+pe "kubectl-s1 get pods -A -o wide"
+pe "kubectl-s2 get pods -A -o wide"
+
+c "Now it is becoming interesting :-)"
 
