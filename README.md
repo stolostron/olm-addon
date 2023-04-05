@@ -16,3 +16,10 @@ Instructions for setting up a local development or test environment, deploying O
 
 The addon can be configured to get the OLM components placed on desired nodes through the usual Kubernetes mechanisms: [node selectors](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) and [taints and tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
 Instructions for configuring the addon are available in [CONFIGURATION.md](./CONFIGURATION.md)
+
+## Demo
+
+A demo of the olm-addon is available [in the demo directory](./demo).
+Here is a recording of it (7:30 min)
+
+[![asciicast](https://asciinema.org/a/574475.svg)](https://asciinema.org/a/574475)
