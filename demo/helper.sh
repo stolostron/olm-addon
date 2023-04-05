@@ -20,3 +20,10 @@ function c() {
   p "# $comment"
 }
 
+function wait_command() {
+  local command="$1";
+  local wait_seconds="${2:-40}"; # 40 seconds as default timeout
+  until [[ $((wait_seconds--)) -eq 0 ]] || eval "$command 2>/dev/null" ; do sleep 1 && echo -n "."; done
+  echo ""
+  ((++wait_seconds))
+}

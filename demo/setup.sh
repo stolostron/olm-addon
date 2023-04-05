@@ -4,6 +4,8 @@ set -o errexit
 
 export DEMO_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
+source ${DEMO_DIR}/helper.sh
+
 while getopts ":a:p:t:" opt; do
   case ${opt} in
     a )
@@ -33,14 +35,6 @@ TLS_PORT=${TLS_PORT:-8443}
 
 RUN_DIR=${DEMO_DIR}/.demo
 mkdir -p ${RUN_DIR}
-
-wait_command() {
-  local command="$1";
-  local wait_seconds="${2:-40}"; # 40 seconds as default timeout
-  until [[ $((wait_seconds--)) -eq 0 ]] || eval "$command 2>/dev/null" ; do sleep 1 && echo -n "."; done
-  echo ""
-  ((++wait_seconds))
-}
 
 # hub cluster configuration
 yq ".networking.apiServerAddress = \"${IP}\"" ${DEMO_DIR}/kind.cfg  > ${RUN_DIR}/hub.cfg
@@ -76,9 +70,9 @@ KUBECONFIG=${RUN_DIR}/spoke2.kubeconfig  MANAGED_CLUSTER_NAME=spoke2 make deploy
 popd
 popd
 
-wait_command '[ $(KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl get csr -o name | wc -l) -eq 2 ]'
-if [ $(KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl get csr -o name | wc -l) -ne 2 ]; then
-  echo "CSR missing for the registration of the spoke clusters"
+wait_command '[ $(KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl get csr -o name | grep spoke | wc -l) -eq 2 ]' 60
+if [ $(KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl get csr -o name | grep spoke | wc -l) -ne 2 ]; then
+  echo "Errro: CSR missing for the registration of the spoke clusters"
   exit 1
 fi
 

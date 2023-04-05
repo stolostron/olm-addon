@@ -20,6 +20,7 @@ export cols
 
 TYPE_SPEED=30
 DEMO_PROMPT="olm-demo $ "
+DEMO_COMMENT_COLOR=$GREEN
 
 # needed for "make deploy"
 export KUBECONFIG=${DEMO_DIR}/.demo/hub.kubeconfig
@@ -80,14 +81,19 @@ c "It only gets installed on clusters with the vendor label set to something els
 pe "kubectl-s1 get pods -A -o wide"
 
 c "Let's label our clusters."
-pe "kubectl label managedclusters spoke1 spoke2 vendor=kind --overwrite"
+pe "kubectl-hub label managedclusters spoke1 spoke2 vendor=kind --overwrite"
+
+# speeding up reconciliation
+ctrler="$(kubectl-hub get pods -n open-cluster-management -o name | grep olm)"
+kubectl-hub delete -n open-cluster-management ${ctrler} &> /dev/null
 
 c "Let's check that OLM has now been installed on the spoke clusters."
+wait_command '[ $(KUBECONFIG=${DEMO_DIR}/.demo/spoke1.kubeconfig kubectl get pods -n olm -o name | wc -l) -gt 3 ]'
 pe "kubectl-s1 get pods -A -o wide"
 pe "kubectl-s2 get pods -A -o wide"
 
 c "OLM deployments can be configured globally, per cluster or set of clusters."
-pe "kubectl-hub get addondeploymentconfigs -o yaml"
+pe "kubectl-hub get addondeploymentconfigs -n open-cluster-management -o yaml"
 c "Here we have node placement configured globally."
 
 c "Let's specify a different OLM image for the spoke1 cluster only to simulate a canary deployment."
@@ -157,6 +163,7 @@ c "Let's approve the installation."
 installplan=$(kubectl-s1 get installplans -n operators -o name)
 pe "kubectl-s1 patch ${installplan} -n operators --type='merge' -p \"{\\\"spec\\\":{\\\"approved\\\":true}}\""
 c "And check that the operator is getting installed."
+wait_command '[ $(KUBECONFIG=${DEMO_DIR}/.demo/spoke1.kubeconfig kubectl get pods -n operators -o name | wc -l) -eq 1 ]'
 pe "kubectl-s1 get pods -n operators"
 pe "kubectl-s1 get crds | grep postgres"
 
@@ -167,7 +174,7 @@ c "Besides the installplan we have just approved there is one for a newer versio
 c "This matches the latest version in the channel we have subscribed to."
 c "We have it here right away as we purposefully installed an older version."
 c "This would however automatically pops up when the operator authors publish a new version to the channel the subscription is for."
-c "Getting it installed is as simple as just approving the new installplan."
+c "Updating the operator is as simple as approving the new installplan."
 
 installplans=$(kubectl-s1 get installplans -n operators -o=jsonpath='{range .items[*]}{@.metadata.name}{" "}{@.spec.approved}{"\n"}{end}')
 while IFS= read -r line; do
@@ -182,14 +189,16 @@ c "Let's check that the operator is getting updated."
 pe "kubectl-s1 get csv -n operators"
 pe "kubectl-s1 get pods -n operators"
 
-}
-
 c "Let's uninstall the operator by deleting the subscription and the clusterserviceversion."
+wait_command '[ $(KUBECONFIG=${DEMO_DIR}/.demo/spoke1.kubeconfig kubectl get csv -n operators -o name | wc -l) -eq 1 ]'
+
 csv=$(kubectl-s1 get csv -n operators -o name)
 sub=$(kubectl-s1 get subscription -n operators -o name)
 pe "kubectl-s1 delete $sub -n operators"
 pe "kubectl-s1 delete $csv -n operators"
 c "And check that the operator is deleted."
 pe "kubectl-s1 get pods -n operators"
+
+c "That's it! Thank you for watching.
 
 # TODO (if time allows): Uninstall OLM 
