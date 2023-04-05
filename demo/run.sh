@@ -134,8 +134,9 @@ c "Let's look at OLM catalogs and what they provide"
 pe "kubectl-s1 get catalogsources -n olm"
 c "The default catalog is for community operators available on operatorhub.io."
 c "Users are free to prevent the installation of this catalog and to have their own curated catalog instead."
+c "The content of catalogs is simply stored as container images in a standard registry, which can be on- or offline." 
 
-c "Here is the content of this catalog."
+c "Here are the operators of this catalog."
 pe "kubectl-s1 get packagemanifests | more"
 c "That's quite a few of them"
 
@@ -199,6 +200,6 @@ pe "kubectl-s1 delete $csv -n operators"
 c "And check that the operator is deleted."
 pe "kubectl-s1 get pods -n operators"
 
-c "That's it! Thank you for watching.
+c "That's it! Thank you for watching."
 
 # TODO (if time allows): Uninstall OLM 
