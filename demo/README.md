@@ -4,7 +4,7 @@ This directory contains a demo of the use of the OLM-addon.
 
 ## Pre-requisites
 
-- [kind](https://kind.sigs.k8s.io/)
+- [kind](https://kind.sigs.k8s.io/) set up for Kubernetes 1.23 or 1.24*
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
 - [yq](https://mikefarah.gitbook.io/yq/)
 - enough OS file watches, e.g.:
@@ -14,6 +14,8 @@ $ sudo sysctl -w fs.inotify.max_user_instances=256
 ~~~
 - an IP address (preferably private) the node ports can be bound to. 127.0.0.1 is not suitable for cross cluster communication.
 - the terminal tool [Pipe Viewer (pv)](http://www.ivarch.com/programs/pv.shtml")
+
+* OLM addon supports 1.23 to 1.26 but the operator deployed during the demo uses the batch/v1beta1 Job API, which has been removed in Kubernetes 1.25. batch/v1 Job API should be used instead.
 
 ## Setup
 
