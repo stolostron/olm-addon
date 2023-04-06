@@ -140,7 +140,8 @@ c "Here are the operators of this catalog."
 pe "kubectl-s1 get packagemanifests | more"
 c "That's quite a few of them"
 
-c "Let's pick one of them and install it by creating a subscription."
+c "Let's pick one of them and install it by creating a subscription directly on the managed cluster."
+c "Alternatively a policy could get defined on the hub to create subscriptions on the matching managed clusters."
 pe "cat <<EOF | kubectl-s1 apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -200,6 +201,9 @@ pe "kubectl-s1 delete $csv -n operators"
 c "And check that the operator is deleted."
 pe "kubectl-s1 get pods -n operators"
 
+c "Finally OLM can get removed by deleting the managedclusteraddon on the hub"
+pe "kubectl-hub delete managedclusteraddons.addon.open-cluster-management.io -n spoke1 olm-addon"
+pe "kubectl-s1 get pods -n olm"
+
 c "That's it! Thank you for watching."
 
-# TODO (if time allows): Uninstall OLM 
