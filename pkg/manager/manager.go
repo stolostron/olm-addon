@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/version"
 
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -28,6 +29,7 @@ import (
 
 	"open-cluster-management.io/addon-framework/pkg/addonfactory"
 	agentfw "open-cluster-management.io/addon-framework/pkg/agent"
+	"open-cluster-management.io/addon-framework/pkg/utils"
 	addonapiv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonv1alpha1client "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
@@ -133,34 +135,14 @@ func (o *olmAgent) GetAgentAddonOptions() agentfw.AgentAddonOptions {
 				},
 			},
 		),
-		// TODO (fgiloux): check the status of the package server
-		/*HealthProber: &agentfw.HealthProber{
-			Type: agentfw.HealthProberTypeWork,
-			WorkProber: &agentfw.WorkHealthProber{
-				ProbeFields: []agentfw.ProbeField{
-					{
-						ResourceIdentifier: workapiv1.ResourceIdentifier{
-							Group:     "operators.coreos.com",
-							Resource:  "subscriptions",
-							Name:      operatorName,
-							Namespace: getInstallNamespace(),
-						},
-						ProbeRules: []workapiv1.FeedbackRule{
-							{
-								Type: workapiv1.JSONPathsType,
-								JsonPaths: []workapiv1.JsonPath{
-									{
-										Name: "installedCSV",
-										Path: ".status.installedCSV",
-									},
-								},
-							},
-						},
-					},
-				},
-				HealthCheck: subHealthCheck,
+		// Check the status of the deployment of the olm-operator
+		// TODO: an agent would be required to surface more fine grained information
+		HealthProber: utils.NewDeploymentProber(
+			types.NamespacedName{
+				Name:      "olm-operator",
+				Namespace: "olm",
 			},
-		},*/
+		),
 		SupportedConfigGVRs: []schema.GroupVersionResource{
 			addonfactory.AddOnDeploymentConfigGVR,
 		},
