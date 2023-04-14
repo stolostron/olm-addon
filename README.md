@@ -20,6 +20,7 @@ Instructions for configuring the addon are available in [CONFIGURATION.md](./CON
 ## Demo
 
 A demo of the olm-addon is available [in the demo directory](./demo).
-Here is a recording of it (7:30 min)
+Here is a recording of it (7:40 min)
 
-[![asciicast](https://asciinema.org/a/574475.svg)](https://asciinema.org/a/574475)
+[![asciicast](https://asciinema.org/a/577612.svg)](https://asciinema.org/a/577612)
+

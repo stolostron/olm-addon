@@ -12,7 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,13 +35,8 @@ import (
 )
 
 const (
-	// Label on ManagedCluster - if this label is set to value "true" on a ManagedCluster resource on the hub then
-	// the addon controller will automatically create a ManagedClusterAddOn for the managed cluster and thus
-	// trigger the deployment of the volsync operator on that managed cluster
-	ManagedClusterInstallLabel      = "addons.open-cluster-management.io/non-openshift"
-	ManagedClusterInstallLabelValue = "true"
-	OpenShiftVendor                 = "OpenShift"
-	defaultVersion                  = "v1.25"
+	OpenShiftVendor = "OpenShift"
+	defaultVersion  = "v1.25"
 )
 
 var manifestFiles = [4]string{"crds.yaml", "permissions.yaml", "olm.yaml", "cleanup.yaml"}
@@ -125,16 +119,8 @@ func (o *olmAgent) Manifests(cluster *clusterv1.ManagedCluster,
 
 func (o *olmAgent) GetAgentAddonOptions() agentfw.AgentAddonOptions {
 	return agentfw.AgentAddonOptions{
-		AddonName: o.addonName,
-		//InstallStrategy: agentfw.InstallAllStrategy(operatorSuggestedNamespace),
-		InstallStrategy: agentfw.InstallByLabelStrategy(
-			"", /* this controller will ignore the ns in the spec so set to empty */
-			metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					ManagedClusterInstallLabel: ManagedClusterInstallLabelValue,
-				},
-			},
-		),
+		AddonName:       o.addonName,
+		InstallStrategy: agentfw.InstallAllStrategy(""), // this controller will ignore the ns in the spec so set to empty
 		// Check the status of the deployment of the olm-operator
 		// TODO: an agent would be required to surface more fine grained information
 		HealthProber: utils.NewDeploymentProber(
@@ -153,10 +139,11 @@ func (o *olmAgent) GetAgentAddonOptions() agentfw.AgentAddonOptions {
 // OLM is part of the OpenShift distribution and should not be installed on these clusters.
 func clusterSupportsAddonInstall(cluster *clusterv1.ManagedCluster) bool {
 	vendor, ok := cluster.Labels["vendor"]
-	if !ok || strings.EqualFold(vendor, OpenShiftVendor) {
-		return false
+	if !ok {
+		return true
+	} else {
+		return !strings.EqualFold(vendor, OpenShiftVendor)
 	}
-	return true
 }
 
 // loadManifestsFromFile read files containing manifest lists and returns

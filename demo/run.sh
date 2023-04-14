@@ -53,44 +53,46 @@ pushd ${DEMO_DIR}/.. &>/dev/null
 pe "make deploy"
 popd &>/dev/null
 
-c "We can now specify that OLM is to be deployed on our clusters. This can also be done once using OCM Placement API."
-pe "cat <<EOF | kubectl-hub apply -f -
-apiVersion: addon.open-cluster-management.io/v1alpha1
-kind: ManagedClusterAddOn
-metadata:
- name: olm-addon
- namespace: spoke1
-spec:
- installNamespace: open-cluster-management-agent-addon
-EOF
-"
+# c "We can now specify that OLM is to be deployed on our clusters. This can also be done once using OCM Placement API."
+# pe "cat <<EOF | kubectl-hub apply -f -
+# apiVersion: addon.open-cluster-management.io/v1alpha1
+# kind: ManagedClusterAddOn
+# metadata:
+#  name: olm-addon
+#  namespace: spoke1
+# spec:
+#  installNamespace: open-cluster-management-agent-addon
+# EOF
+# "
 
-pe "cat <<EOF | kubectl-hub apply -f -
-apiVersion: addon.open-cluster-management.io/v1alpha1
-kind: ManagedClusterAddOn
-metadata:
- name: olm-addon
- namespace: spoke2
-spec:
- installNamespace: open-cluster-management-agent-addon
-EOF
-"
+# pe "cat <<EOF | kubectl-hub apply -f -
+# apiVersion: addon.open-cluster-management.io/v1alpha1
+# kind: ManagedClusterAddOn
+# metadata:
+#  name: olm-addon
+#  namespace: spoke2
+# spec:
+#  installNamespace: open-cluster-management-agent-addon
+# EOF
+# "
 
-c "OLM has not been installed on the spoke clusters yet."
+c "OLM is now getting automatically installed on the spoke clusters."
+wait_command '[ $(KUBECONFIG=${DEMO_DIR}/.demo/hub.kubeconfig kubectl get managedclusteraddon -A 2>/dev/null | wc -l) -gt 1 ]'
+pe "kubectl-hub get managedclusteraddons -A"
+c "The selection of clusters where OLM gets installed is driven by a placement resource, which is configurable."
+c "Alternatively managedclusteraddons resources can be created manually."
+pe "kubectl-hub get placement -n open-cluster-management -o yaml"
 c "It only gets installed on clusters with the vendor label set to something else than OpenShift."
-pe "kubectl-s1 get pods -A -o wide"
+c "This check is additionally built in the addon implementation."
 
-c "Let's label our clusters."
-pe "kubectl-hub label managedclusters spoke1 spoke2 vendor=kind --overwrite"
-
-# speeding up reconciliation
-ctrler="$(kubectl-hub get pods -n open-cluster-management -o name | grep olm)"
-kubectl-hub delete -n open-cluster-management ${ctrler} &> /dev/null
-
-c "Let's check that OLM has now been installed on the spoke clusters."
+c "Let's check what we have on the spoke clusters."
 wait_command '[ $(KUBECONFIG=${DEMO_DIR}/.demo/spoke1.kubeconfig kubectl get pods -n olm -o name | wc -l) -gt 3 ]'
 pe "kubectl-s1 get pods -A -o wide"
 pe "kubectl-s2 get pods -A -o wide"
+
+# speeding up reconciliation
+# ctrler="$(kubectl-hub get pods -n open-cluster-management -o name | grep olm)"
+# kubectl-hub delete -n open-cluster-management ${ctrler} &> /dev/null
 
 c "OLM deployments can be configured globally, per cluster or set of clusters."
 pe "kubectl-hub get addondeploymentconfigs -n open-cluster-management -o yaml"

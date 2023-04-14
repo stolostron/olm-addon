@@ -12,7 +12,7 @@ spec:
     type: Placements
     placements:
     - name: non-openshift
-      namespace: default
+      namespace: open-cluster-management
   supportedConfigs:
   - group: addon.open-cluster-management.io
     resource: addondeploymentconfigs
