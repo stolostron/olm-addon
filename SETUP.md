@@ -1,6 +1,6 @@
 # Setup
 
-These are instructions for installing and configuring OLM on Kubernetes clusters through ACM using the OLM addon.
+These are instructions for installing and configuring OLM on Kubernetes clusters through OCM using the OLM addon.
 
 ## Local environment
 
