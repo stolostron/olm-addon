@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: addon-manager-controller
+  name: addon-manager-controller
+  namespace: open-cluster-management-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: addon-manager-controller
+  template:
+    metadata:
+      labels:
+        app: addon-manager-controller
+    spec:
+      containers:
+      - args:
+        - /addon-manager
+        - manager
+        image: quay.io/open-cluster-management/addon-manager:latest
+        imagePullPolicy: IfNotPresent
+        name: addon-manager-controller
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          runAsNonRoot: true
+      serviceAccountName: addon-manager-sa

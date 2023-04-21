@@ -1,0 +1,16 @@
+---
+namespace: open-cluster-management
+
+resources:
+- cluster_role.yaml
+- cluster_role_binding.yaml
+- service_account.yaml
+- olm_clustermanagementaddon.yaml
+- olm_addondeploymentconfig.yaml
+# Uncomment the following lines for creating a Placement that can be used globally
+# and referenced in olm_clustermanagementaddon.yaml
+- placement.yaml
+- managedclustersetbinding.yaml
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization

@@ -85,7 +85,8 @@ func ProvisionedCluster(t *testing.T) *testCluster {
 
 	cluster := KindCluster(t)
 	deployRegistrationOperator(t)
-	deployAddon(t)
+	deployAddonManager(t)
+	deployOLMAddon(t)
 
 	return cluster
 }
@@ -191,18 +192,44 @@ func deployRegistrationOperator(t *testing.T) {
 	t.Logf("registration operator provisioned")
 }
 
-// deployAddon deploys olm-addon.
-// It deploys the latest version available from the remote  repository.
-// TODO: It would be better to load the latest local version onto the kind node instead.
-func deployAddon(t *testing.T) {
-	commandLine := []string{"kubectl", "apply", "-k", path.Join(RepoRoot, "deploy")}
+func deployAddonManager(t *testing.T) {
+	commandLine := []string{"kubectl", "apply", "-k", "https://github.com/open-cluster-management-io/addon-framework/deploy/"}
+	cmd := exec.Command(commandLine[0], commandLine[1:]...)
+	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "failed deploying the addon-manager: %s", string(output))
+
+}
+
+// deployOLMAddon deploys the necessary manifests and starts olm-addon locally.
+func deployOLMAddon(t *testing.T) {
+	commandLine := []string{"kubectl", "apply", "-k", path.Join(RepoRoot, "deploy/manifests")}
 	cmd := exec.Command(commandLine[0], commandLine[1:]...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
 	output, err := cmd.CombinedOutput()
-	require.NoError(t, err, "failed deploying olm-addon: %s", string(output))
+	require.NoError(t, err, "failed deploying olm-addon manifests: %s", string(output))
 
-	// fmt.Sprintf("PATH=%s", os.Getenv("PATH"))
-	t.Logf("olm-addon deployed")
+	dir, err := os.Getwd()
+	require.NoError(t, err, "failed retrieving the current directory")
+	managerBinary := path.Join(dir, "..", "..", "..", "bin", "olm-addon-controller")
+	commandLine = []string{managerBinary, "-v", "8"}
+	cmd = exec.Command(commandLine[0], commandLine[1:]...)
+	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
+	// open the out file for writing
+	logFile, err := os.Create(path.Join(TestCluster.testDir, "addon-manager.log"))
+	require.NoError(t, err, "failed creating addon-manager.log")
+	logFile.Write([]byte("Starting...\n"))
+	cmd.Stdout = logFile
+	cmd.Stderr = logFile
+	err = cmd.Start()
+	TestCluster.cleanFuncs = append(TestCluster.cleanFuncs, func() {
+		if err := cmd.Process.Kill(); err != nil {
+			t.Logf("failed to kill controller: %v", err)
+		}
+	})
+	require.NoError(t, err, "failed to start olm-addon controller")
+	t.Logf("olm-addon running")
 }
 
 // cleanup runs the functions for cleaning up in reverse order

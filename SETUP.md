@@ -143,6 +143,13 @@ Finally, the managed cluster configuration can be edited to:
 $ kubectl edit managedcluster cluster1
 ~~~
 
+### Deployment of the addon-manager
+
+The addon-manager provides automated creation of ManagedClusterAddOn resources according to Placement for instance. It can be deployed with the following command.
+~~~
+kubectl apply -k https://github.com/open-cluster-management-io/addon-framework/deploy/
+~~~
+
 ## Build and deployment of the OLM addon agent
 
 You need to clone this repository.
@@ -189,7 +196,7 @@ open-cluster-management         olm-addon-controller-7664b797b9-j5dkr           
 Now that the preparation is complete to deploy OLM on a spoke cluster it is as simple as creating a `ManagedClusterAddon` resource in the namespace of the spoke cluster.
 
 ~~~
-cat <<EOF | oc apply -f -
+cat <<EOF | kubectl apply -f -
 apiVersion: addon.open-cluster-management.io/v1alpha1
 kind: ManagedClusterAddOn
 metadata:
@@ -220,7 +227,7 @@ operatorhubio-catalog-zg66w         1/1     Running   0          1m
 
 It is possible to leverage the Placement API to get a ManagedClusterAddOn automatically created, hence OLM deployed for any new cluster meeting a specific condition, i.e having the label vendor not set to OpenShift in its managedcluster resource.
 
-An example of such a Placement is available in [deploy/placement.yaml](./deploy/placement.yaml). This Placement can then be referenced in the installStrategy of the [ClusterManagementAddOn resource](./deploy/olm_clustermanagementaddon.yaml).
+An example of such a Placement is available in [deploy/placement.yaml](deploy/manifests/placement.yaml). This Placement can then be referenced in the installStrategy of the [ClusterManagementAddOn resource](deploy/manifests/olm_clustermanagementaddon.yaml).
 
 ~~~
   installStrategy:
