@@ -88,3 +88,5 @@ caBundle2=$(KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl get managedclusters spo
 url2=$(KUBECONFIG=${RUN_DIR}/spoke2.kubeconfig kubectl config view -o jsonpath='{.clusters[].cluster.server}')
 KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl patch managedclusters spoke2 --type='merge' -p "{\"spec\":{\"managedClusterClientConfigs\": [{\"caBundle\":\"${caBundle2}\", \"url\":\"${url2}\"}]}}"
 
+KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl apply -k https://github.com/open-cluster-management-io/addon-framework/deploy/
+

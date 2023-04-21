@@ -203,8 +203,12 @@ pe "kubectl-s1 delete $csv -n operators"
 c "And check that the operator is deleted."
 pe "kubectl-s1 get pods -n operators"
 
-c "Finally OLM can get removed by deleting the managedclusteraddon on the hub"
-pe "kubectl-hub delete managedclusteraddons.addon.open-cluster-management.io -n spoke1 olm-addon"
+c "Finally OLM can get removed by deleting the managedclusteraddon on the hub if it was manually created."
+c "Here we will just patch the placement so that our spoke clusters are not covered by the rule anymore."
+# pe "kubectl-hub delete managedclusteraddons.addon.open-cluster-management.io -n spoke1 olm-addon"
+pe "kubectl-hub patch Placement -n open-cluster-management non-openshift --type='merge' -p  \"{\\\"spec\\\":{\\\"predicates\\\":[{\\\"requiredClusterSelector\\\":{\\\"labelSelector\\\":{\\\"matchLabels\\\":{\\\"demo\\\":\\\"finished\\\"}}}}]}}\""
+pe "kubectl-hub get placements -A"
+wait_command '[ $(KUBECONFIG=${DEMO_DIR}/.demo/spoke1.kubeconfig kubectl get pods -n olm -o name | wc -l) -lt 2 ]'
 pe "kubectl-s1 get pods -n olm"
 
 c "That's it! Thank you for watching."
