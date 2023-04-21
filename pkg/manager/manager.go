@@ -119,8 +119,8 @@ func (o *olmAgent) Manifests(cluster *clusterv1.ManagedCluster,
 
 func (o *olmAgent) GetAgentAddonOptions() agentfw.AgentAddonOptions {
 	return agentfw.AgentAddonOptions{
-		AddonName:       o.addonName,
-		InstallStrategy: agentfw.InstallAllStrategy(""), // this controller will ignore the ns in the spec so set to empty
+		AddonName: o.addonName,
+		// InstallStrategy is driven by placements handled by the addon-manager
 		// Check the status of the deployment of the olm-operator
 		// TODO: an agent would be required to surface more fine grained information
 		HealthProber: utils.NewDeploymentProber(
