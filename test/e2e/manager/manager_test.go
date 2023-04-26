@@ -54,7 +54,7 @@ func TestInstallation(t *testing.T) {
 	require.NoError(t, err, "failed creating a client for OCM CRDs")
 	placement, err := ocmClient.Placements("open-cluster-management").Get(ctx, "non-openshift", metav1.GetOptions{})
 	require.NoError(t, err, "failed retrieving the placement")
-	placement.Spec.Predicates[0].RequiredClusterSelector.LabelSelector.MatchExpressions[0].Operator = metav1.LabelSelectorOpNotIn
+	placement.Spec.Predicates[0].RequiredClusterSelector.LabelSelector.MatchLabels = map[string]string{"test": "exclude"}
 	_, err = ocmClient.Placements("open-cluster-management").Update(ctx, placement, metav1.UpdateOptions{})
 	require.NoError(t, err, "failed updating the ManagedCluster resource to uninstall OLM")
 	err = addonClient.ManagedClusterAddOns("cluster1").Delete(ctx, "olm-addon", metav1.DeleteOptions{})
