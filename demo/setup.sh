@@ -72,7 +72,7 @@ popd
 
 wait_command '[ $(KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl get csr -o name | grep spoke | wc -l) -eq 2 ]' 60
 if [ $(KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl get csr -o name | grep spoke | wc -l) -ne 2 ]; then
-  echo "Errro: CSR missing for the registration of the spoke clusters"
+  echo "Error: CSR missing for the registration of the spoke clusters"
   exit 1
 fi
 
