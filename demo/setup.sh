@@ -63,6 +63,7 @@ then
   git clone git@github.com:open-cluster-management-io/registration-operator.git
 fi
 pushd registration-operator
+git pull
 # export IMAGE_TAG=v0.10.0
 KUBECONFIG=${RUN_DIR}/hub.kubeconfig make deploy-hub
 KUBECONFIG=${RUN_DIR}/spoke1.kubeconfig  MANAGED_CLUSTER_NAME=spoke1 make deploy-spoke
