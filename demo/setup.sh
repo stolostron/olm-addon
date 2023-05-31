@@ -64,7 +64,7 @@ then
 fi
 pushd registration-operator
 git pull
-# export IMAGE_TAG=v0.10.0
+export IMAGE_TAG=v0.11.0
 KUBECONFIG=${RUN_DIR}/hub.kubeconfig make deploy-hub
 KUBECONFIG=${RUN_DIR}/spoke1.kubeconfig  MANAGED_CLUSTER_NAME=spoke1 make deploy-spoke
 KUBECONFIG=${RUN_DIR}/spoke2.kubeconfig  MANAGED_CLUSTER_NAME=spoke2 make deploy-spoke
