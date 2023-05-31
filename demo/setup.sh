@@ -63,7 +63,8 @@ then
   git clone git@github.com:open-cluster-management-io/registration-operator.git
 fi
 pushd registration-operator
-# export IMAGE_TAG=v0.10.0
+git pull
+export IMAGE_TAG=v0.11.0
 KUBECONFIG=${RUN_DIR}/hub.kubeconfig make deploy-hub
 KUBECONFIG=${RUN_DIR}/spoke1.kubeconfig  MANAGED_CLUSTER_NAME=spoke1 make deploy-spoke
 KUBECONFIG=${RUN_DIR}/spoke2.kubeconfig  MANAGED_CLUSTER_NAME=spoke2 make deploy-spoke
@@ -72,7 +73,7 @@ popd
 
 wait_command '[ $(KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl get csr -o name | grep spoke | wc -l) -eq 2 ]' 60
 if [ $(KUBECONFIG=${RUN_DIR}/hub.kubeconfig kubectl get csr -o name | grep spoke | wc -l) -ne 2 ]; then
-  echo "Errro: CSR missing for the registration of the spoke clusters"
+  echo "Error: CSR missing for the registration of the spoke clusters"
   exit 1
 fi
 
