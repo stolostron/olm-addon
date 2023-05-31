@@ -15,10 +15,9 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"open-cluster-management.io/addon-framework/pkg/addonmanager/constants"
+	addonapiv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclientsetv1 "open-cluster-management.io/api/client/addon/clientset/versioned/typed/addon/v1alpha1"
 	ocmclientsetv1 "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1"
-
 	"open-cluster-management.io/olm-addon/test/e2e/framework"
 )
 
@@ -35,7 +34,7 @@ func TestInstallation(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		return ConditionIsTrue(addon.Status.Conditions, constants.AddonManifestApplied)
+		return ConditionIsTrue(addon.Status.Conditions, addonapiv1alpha1.ManagedClusterAddOnManifestApplied)
 	}, 120*time.Second, 100*time.Millisecond, "expected ManagedClusterAddOn to have the ManifestApplied condition")
 
 	// Check that OLM is running
