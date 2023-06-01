@@ -11,3 +11,6 @@ subjects:
 - kind: ServiceAccount
   name: addon-manager-sa
   namespace: open-cluster-management-hub
+- kind: ServiceAccount
+  name: olm-addon-sa
+  namespace: open-cluster-management

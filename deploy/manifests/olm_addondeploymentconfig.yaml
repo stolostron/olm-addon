@@ -13,6 +13,8 @@ spec:
 #  customizedVariables:
 #  - name: OLMImage
 #    value: quay.io/operator-framework/olm@sha256:3cfc40fa4b779fe1d9817dc454a6d70135e84feba1ffc468c4e434de75bb2ac5
+#  - name: ConfigMapServerImage
+#    value: quay.io/operator-framework/configmap-operator-registry:latest
   nodePlacement:
     nodeSelector:
       kubernetes.io/os: linux

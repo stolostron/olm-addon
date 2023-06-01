@@ -103,7 +103,7 @@ pe "cat <<EOF | kubectl-hub apply -f -
 apiVersion: addon.open-cluster-management.io/v1alpha1
 kind: AddOnDeploymentConfig
 metadata:
-  name: olm-release-0.24-0
+  name: olm-release-0.24.0
   namespace: default
 spec:
 # OLMImage
@@ -115,10 +115,12 @@ spec:
   customizedVariables:
   - name: OLMImage
     value: quay.io/operator-framework/olm@sha256:f9ea8cef95ac9b31021401d4863711a5eec904536b449724e0f00357548a31e7
+  - name: ConfigMapServerImage
+    value: quay.io/operator-framework/configmap-operator-registry:v1.27.0
 EOF
 "
 
-pe "kubectl-hub patch managedclusteraddon -n spoke1 olm-addon --type='merge' -p \"{\\\"spec\\\":{\\\"configs\\\":[{\\\"group\\\":\\\"addon.open-cluster-management.io\\\",\\\"resource\\\":\\\"addondeploymentconfigs\\\",\\\"name\\\":\\\"olm-release-0-24-0\\\",\\\"namespace\\\":\\\"default\\\"}]}}\""
+pe "kubectl-hub patch managedclusteraddon -n spoke1 olm-addon --type='merge' -p \"{\\\"spec\\\":{\\\"configs\\\":[{\\\"group\\\":\\\"addon.open-cluster-management.io\\\",\\\"resource\\\":\\\"addondeploymentconfigs\\\",\\\"name\\\":\\\"olm-release-0.24.0\\\",\\\"namespace\\\":\\\"default\\\"}]}}\""
 
 c "Let's check that the new image has been deployed on spoke1 and not spoke2."
 pe "kubectl-s1 get pods -A -o wide"

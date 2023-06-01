@@ -206,6 +206,12 @@ func setConfiguration(obj runtime.Object, config addonfactory.Values) {
 			for i := range deployment.Spec.Template.Spec.Containers {
 				deployment.Spec.Template.Spec.Containers[i].Image = img.(string)
 			}
+			if deployment.Name == "catalog-operator" {
+				deployment.Spec.Template.Spec.Containers[0].Args[4] = img.(string)
+			}
+		}
+		if cmsImg, ok := config["ConfigMapServerImage"]; ok && deployment.Name == "catalog-operator" {
+			deployment.Spec.Template.Spec.Containers[0].Args[2] = "--configmapServerImage=" + cmsImg.(string)
 		}
 		return
 	}
