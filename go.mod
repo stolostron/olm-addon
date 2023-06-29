@@ -1,4 +1,4 @@
-module open-cluster-management.io/olm-addon
+module github.com/stolostron/olm-addon
 
 go 1.19
 
