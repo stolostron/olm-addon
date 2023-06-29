@@ -46,3 +46,13 @@ golangci-lint: $(GOLANGCILINT) ## Download golangci-lint
 $(GOLANGCILINT): $(LOCALBIN)
 	curl -sSfL $(GOLANGCI_URL) | sh -s -- -b $(LOCALBIN) $(GOLANGCI_VERSION)
 
+.PHONY: unit
+TEST_PACKAGES ?= ./pkg/...
+unit: ## Run unit tests
+	go test $(TEST_PACKAGES)
+
+.PHONY: e2e
+E2E_PACKAGES ?= ./test/e2e/...
+e2e: ## Run e2e tests
+	go test $(E2E_PACKAGES)
+
