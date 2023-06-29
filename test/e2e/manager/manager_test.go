@@ -24,7 +24,7 @@ import (
 func TestInstallation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	cluster := framework.ProvisionedCluster(t)
+	cluster := framework.ProvisionCluster(t)
 
 	// check that OLM is getting deployed automatically through the placement rule
 	addonClient, err := addonclientsetv1.NewForConfig(cluster.ClientConfig(t))
