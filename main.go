@@ -13,7 +13,7 @@ import (
 	"open-cluster-management.io/addon-framework/pkg/addonmanager"
 	addonv1alpha1client "open-cluster-management.io/api/client/addon/clientset/versioned"
 
-	"open-cluster-management.io/olm-addon/pkg/manager"
+	"github.com/stolostron/olm-addon/pkg/manager"
 )
 
 const (

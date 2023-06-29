@@ -15,10 +15,10 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/stolostron/olm-addon/test/e2e/framework"
 	addonapiv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclientsetv1 "open-cluster-management.io/api/client/addon/clientset/versioned/typed/addon/v1alpha1"
 	ocmclientsetv1 "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1"
-	"open-cluster-management.io/olm-addon/test/e2e/framework"
 )
 
 func TestInstallation(t *testing.T) {
