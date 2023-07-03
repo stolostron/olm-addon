@@ -1,10 +1,8 @@
 # syntax=docker/dockerfile:1.4
 
 # Build the addon controller binary
-FROM --platform=${BUILDPLATFORM} golang:1.19 AS builder
+FROM --platform=${BUILDPLATFORM} registry.ci.openshift.org/stolostron/builder:go1.19-linux AS builder
 WORKDIR /workspace
-
-RUN apt-get update
 
 # Run this with docker build --build-arg goproxy=$(go env GOPROXY) to override the goproxy
 ARG goproxy=https://proxy.golang.org
@@ -32,14 +30,18 @@ RUN --mount=type=cache,target=/root/.cache/go-build,z \
     --mount=type=cache,target=/go/pkg/mod,z \
     CGO_ENABLED=0 go build -a -o olm-addon-controller
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:debug
+# Use UBI minimal as base image to package the manager binary
+FROM registry.access.redhat.com/ubi8/ubi-minimal
+
+RUN microdnf update && \
+    microdnf clean all
+
 WORKDIR /
 COPY --from=builder /workspace/olm-addon-controller .
 
 # Use uid of nonroot user (65532) because kubernetes expects numeric user when applying pod security policies
-RUN ["/busybox/sh", "-c", "mkdir -p /data && chown 65532:65532 /data"]
+RUN mkdir -p /data && chown 65532:65532 /data
+
 USER 65532:65532
 WORKDIR /data
 VOLUME /data
