@@ -70,7 +70,10 @@ func main() {
 	}
 
 	ctx := context.Background()
-	go addonMgr.Start(ctx)
-
+	if err := addonMgr.Start(ctx); err != nil {
+		klog.ErrorS(err, "unable to start the addon manager")
+		os.Exit(1)
+	}
 	<-ctx.Done()
+
 }
