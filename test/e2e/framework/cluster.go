@@ -130,7 +130,9 @@ func KindCluster(t *testing.T) *testCluster {
 		TestCluster.cleanFuncs = append(TestCluster.cleanFuncs, func() {
 			commandLine := []string{"kind", "delete", "cluster", "--name", "olm-addon-e2e"}
 			cmd := exec.Command(commandLine[0], commandLine[1:]...)
-			cmd.Run()
+			if err := cmd.Run(); err != nil {
+				t.Logf("kind cluster could not get deleted: %v", err)
+			}
 		})
 	}
 	TestCluster.started = true
@@ -262,7 +264,8 @@ func deployOLMAddon(t *testing.T) {
 	// open the out file for writing
 	logFile, err := os.Create(path.Join(TestCluster.testDir, "addon-manager.log"))
 	require.NoError(t, err, "failed creating addon-manager.log")
-	logFile.Write([]byte("Starting...\n"))
+	_, err = logFile.Write([]byte("Starting...\n"))
+	require.NoError(t, err, "failed writing to addon-manager.log")
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	err = cmd.Start()
