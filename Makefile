@@ -4,17 +4,17 @@ IMAGE_REGISTRY ?= quay.io/fgiloux
 IMAGE_TAG ?= latest
 IMG ?= $(IMAGE_REGISTRY)/$(IMAGE):$(IMAGE_TAG)
 CLEANER_IMG ?= $(IMAGE_REGISTRY)/$(CLEANER_IMAGE):$(IMAGE_TAG)
-
+CGO_ENABLED ?= 0
 OS := $(shell go env GOOS)
 ARCH := $(shell go env GOARCH)
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 # Helper software versions
-GOLANGCI_VERSION := v1.50.0
+GOLANGCI_VERSION := v1.53.3
 
 .PHONY: build
 build: ## Build the project binaries
-	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build $(BUILDFLAGS) -o bin/olm-addon-controller
+	GOOS=$(OS) GOARCH=$(ARCH) go build $(BUILDFLAGS) -o bin/olm-addon-controller
 
 .PHONY: docker-build
 docker-build: ## Build docker image
