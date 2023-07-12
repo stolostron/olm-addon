@@ -15,6 +15,7 @@ import (
 
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ocmclientsetv1 "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1"
@@ -88,11 +89,12 @@ func ProvisionCluster(t *testing.T) *testCluster {
 		TestCluster = KindCluster(t)
 	} else {
 		TestCluster.t = t
-		commandLine := []string{"kubectl", "config", "current-context"}
+		commandLine := []string{"kubectl", "version"}
+		commandLine = append(commandLine, "--kubeconfig", kcfg)
 		cmd := exec.Command(commandLine[0], commandLine[1:]...)
-		info, err := cmd.CombinedOutput()
-		require.NoError(t, err, "failed retrieving cluster information: %s", string(info))
-		t.Logf("Using existing cluster configured through the environment variable TEST_KUBECONFIG: %s", info)
+		version, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed retrieving cluster version: %s", string(version))
+		t.Logf("Using existing cluster configured through the environment variable TEST_KUBECONFIG: %s", kcfg)
 		TestCluster.kubeconfig = kcfg
 		TestCluster.started = true
 		TestCluster.ready = true
@@ -150,8 +152,24 @@ func KindCluster(t *testing.T) *testCluster {
 }
 
 func deployRegistrationOperator(t *testing.T) {
+
+	cfg := TestCluster.ClientConfig(t)
+	coreClient, err := kubernetes.NewForConfig(cfg)
+	require.NoError(t, err, "failed to construct client for cluster")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Check whether the registration operator is already available
+	_, err = coreClient.AppsV1().Deployments("open-cluster-management").Get(ctx, "cluster-manager", metav1.GetOptions{})
+	if err == nil {
+		// cluster-manager already available, nothing to do here
+		return
+	} else if !errors.IsNotFound(err) {
+		require.Fail(t, "failed getting the deployment of the cluster-manager", "error: %v", err)
+	}
+
 	// Cloning the registration-operator repo.
-	_, err := os.Stat(path.Join(TestCluster.baseDir, registrationOperatorDirName))
+	_, err = os.Stat(path.Join(TestCluster.baseDir, registrationOperatorDirName))
 	if err != nil {
 		if os.IsNotExist(err) {
 			commandLine := []string{"git", "clone", registrationOperatorRepo, path.Join(TestCluster.baseDir, registrationOperatorDirName)}
@@ -181,12 +199,6 @@ func deployRegistrationOperator(t *testing.T) {
 	output, err = cmd.CombinedOutput()
 	require.NoError(t, err, "failed deploying the registration operator: %s", string(output))
 
-	cfg := TestCluster.ClientConfig(t)
-	coreClient, err := kubernetes.NewForConfig(cfg)
-	require.NoError(t, err, "failed to construct client for cluster")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	// Approving the CSR
 	var csrList *certificatesv1.CertificateSigningRequestList
 	require.Eventually(t, func() bool {
@@ -194,7 +206,7 @@ func deployRegistrationOperator(t *testing.T) {
 			ctx,
 			metav1.ListOptions{LabelSelector: " open-cluster-management.io/cluster-name=cluster1"},
 		)
-		require.NoError(t, err, "failed to construct client for cluster")
+		require.NoError(t, err, "failed to list CSRs")
 		return len(csrList.Items) > 0
 	}, 60*time.Second, 100*time.Millisecond, "expected a CSR")
 	addApproval := true
@@ -230,6 +242,21 @@ func deployRegistrationOperator(t *testing.T) {
 }
 
 func deployAddonManager(t *testing.T) {
+	cfg := TestCluster.ClientConfig(t)
+	coreClient, err := kubernetes.NewForConfig(cfg)
+	require.NoError(t, err, "failed to construct client for cluster")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Check whether the addon manager is already available
+	_, err = coreClient.AppsV1().Deployments("open-cluster-management-hub").Get(ctx, "addon-manager-controller", metav1.GetOptions{})
+	if err == nil {
+		// addon-manager-controller already available, nothing to do here
+		return
+	} else if !errors.IsNotFound(err) {
+		require.Fail(t, "failed getting the deployment of the addon-manager-controller", "error: %v", err)
+	}
+
 	commandLine := []string{"kubectl", "apply", "-k", "https://github.com/open-cluster-management-io/addon-framework/deploy/"}
 	cmd := exec.Command(commandLine[0], commandLine[1:]...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
