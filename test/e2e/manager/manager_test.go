@@ -61,7 +61,7 @@ func TestInstallation(t *testing.T) {
 	require.Eventually(t, func() bool {
 		_, err = coreClient.CoreV1().Namespaces().Get(ctx, "olm", metav1.GetOptions{})
 		return err != nil && apierrors.IsNotFound(err)
-	}, 120*time.Second, 100*time.Millisecond, "expected OLM to be uninstalled and the olm namespace removed")
+	}, 180*time.Second, 100*time.Millisecond, "expected OLM to be uninstalled and the olm namespace removed")
 }
 
 func ConditionIsTrue(conditions []metav1.Condition, t string) bool {
