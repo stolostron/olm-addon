@@ -13,7 +13,7 @@ ssh "${OPT[@]}" "$HOST" sudo yum install git golang -y
 # to run as normal user
 # ssh "${OPT[@]}" "$HOST" sudo usermod -a -G docker '$USER'
 echo "running e2e tests"
-ssh "${OPT[@]}" "$HOST" "cd /tmp/olm-addon && go version && go mod download && make e2e" 2>&1 | tee $ARTIFACT_DIR/test.log
+ssh "${OPT[@]}" "$HOST" "export PATH=/usr/bin:$PATH && echo $PATH && cd /tmp/olm-addon && go version && go mod download && make e2e" 2>&1 | tee $ARTIFACT_DIR/test.log
 if [[ $? -ne 0 ]]; then
   echo "Failure"
   cat $ARTIFACT_DIR/test.log
