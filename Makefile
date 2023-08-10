@@ -49,10 +49,10 @@ $(GOLANGCILINT): $(LOCALBIN)
 .PHONY: unit
 TEST_PACKAGES ?= ./pkg/...
 unit: ## Run unit tests
-	go test $(TEST_PACKAGES)
+	go test $(TEST_PACKAGES) || (echo "unit tests failed"; exit 1)
 
 .PHONY: e2e
 E2E_PACKAGES ?= ./test/e2e/...
 e2e: ## Run e2e tests
-	go test $(E2E_PACKAGES)
+	go test $(E2E_PACKAGES) || (echo "e2e tests failed"; exit 1)
 
