@@ -10,6 +10,7 @@ OPT=(-q -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" -i "$KEY
 scp "${OPT[@]}" -r ../olm-addon "$HOST:/tmp/olm-addon"
 ssh "${OPT[@]}" "$HOST" sudo sed -i 's~::1~#::1~g' /etc/hosts
 ssh "${OPT[@]}" "$HOST" sudo yum install git -y
+ssh "${OPT[@]}" "$HOST" sudo yum update golang -y
 # to run as normal user
 # ssh "${OPT[@]}" "$HOST" sudo usermod -a -G docker '$USER'
 echo "running e2e tests"
