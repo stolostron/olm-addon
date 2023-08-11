@@ -18,19 +18,17 @@ echo "operating system: $system"
 
 # Install the latest kubectl version
 if [[ "$system" == "Linux" ]]; then
-        ssh "${OPT[@]}" "$HOST" "curl -LO \"https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl\""
-    elif [[ "$system" == "Darwin" ]]; then
-        ssh "${OPT[@]}" "$HOST" "curl -LO \"https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/arm64/kubectl\""
-    fi
+    ssh "${OPT[@]}" "$HOST" "curl -LO \"https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl\""
+elif [[ "$system" == "Darwin" ]]; then
+    ssh "${OPT[@]}" "$HOST" "curl -LO \"https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/arm64/kubectl\""
 fi
 ssh "${OPT[@]}" "$HOST" "chmod +x ./kubectl; sudo mv ./kubectl /usr/bin/kubectl; kubectl version"
 
 # Install the kind v0.20.0
 if [[ "$system" == "Linux" ]]; then
-        ssh "${OPT[@]}" "$HOST" "curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64"
-    elif [[ "$system" == "Darwin" ]]; then
-        ssh "${OPT[@]}" "$HOST" "curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-darwin-arm64"
-    fi
+    ssh "${OPT[@]}" "$HOST" "curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64"
+elif [[ "$system" == "Darwin" ]]; then
+    ssh "${OPT[@]}" "$HOST" "curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-darwin-arm64"
 fi
 ssh "${OPT[@]}" "$HOST" "chmod +x ./kind; sudo mv ./kind /usr/bin/kind; kind version"
 
