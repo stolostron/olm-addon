@@ -2,3 +2,4 @@ bin
 *.log
 .vscode
 demo/.demo
+run-dir.txt

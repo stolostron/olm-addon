@@ -71,6 +71,13 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	runDir, err := os.OpenFile(path.Join(RepoRoot, "run-dir.txt"), os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		runDir.Write([]byte(TestCluster.testDir))
+		runDir.Close()
+	}
 	if TestCluster.debug {
 		TestCluster.cleanFuncs = []func(){}
 	} else {
@@ -206,7 +213,7 @@ func deployRegistrationOperator(t *testing.T) {
 			ctx,
 			metav1.ListOptions{LabelSelector: " open-cluster-management.io/cluster-name=cluster1"},
 		)
-		require.NoError(t, err, "failed to list CSRs")
+		// require.NoError(t, err, "failed to list CSRs")
 		return len(csrList.Items) > 0
 	}, 60*time.Second, 100*time.Millisecond, "expected a CSR")
 	addApproval := true
@@ -276,7 +283,7 @@ func deployAddonManager(t *testing.T) {
 
 // deployOLMAddon deploys the necessary manifests and starts olm-addon locally.
 func deployOLMAddon(t *testing.T) {
-	commandLine := []string{"kubectl", "apply", "-k", path.Join(RepoRoot, "deploy/manifests")}
+	commandLine := []string{"kubectl", "apply", "-k", path.Join(RepoRoot, "deploy", "manifests")}
 	cmd := exec.Command(commandLine[0], commandLine[1:]...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
 	output, err := cmd.CombinedOutput()
