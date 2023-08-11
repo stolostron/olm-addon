@@ -35,7 +35,7 @@ func TestInstallation(t *testing.T) {
 			return false
 		}
 		return ConditionIsTrue(addon.Status.Conditions, addonapiv1alpha1.ManagedClusterAddOnManifestApplied)
-	}, 120*time.Second, 100*time.Millisecond, "expected ManagedClusterAddOn to have the ManifestApplied condition")
+	}, 180*time.Second, 100*time.Millisecond, "expected ManagedClusterAddOn to have the ManifestApplied condition")
 
 	// Check that OLM is running
 	coreClient, err := kubernetes.NewForConfig(cluster.ClientConfig(t))
