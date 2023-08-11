@@ -34,7 +34,7 @@ ssh "${OPT[@]}" "$HOST" "chmod +x ./kind; sudo mv ./kind /usr/bin/kind; kind ver
 
 echo "running e2e tests"
 set -o pipefail
-ssh "${OPT[@]}" "$HOST" "export GOROOT=/usr/lib/golang; export PATH=\$GOROOT/bin:\$PATH; echo \$PATH && cd /tmp/olm-addon && go version && kind version && go mod download && make e2e" 2>&1 | tee $ARTIFACT_DIR/test.log
+ssh "${OPT[@]}" "$HOST" "export GOROOT=/usr/lib/golang; export PATH=\$GOROOT/bin:\$PATH; echo \$PATH && cd /tmp/olm-addon && go version && kind version && go mod download && make build && make e2e" 2>&1 | tee $ARTIFACT_DIR/test.log
 if [[ $? -ne 0 ]]; then
   echo "Failure"
   cat $ARTIFACT_DIR/test.log
