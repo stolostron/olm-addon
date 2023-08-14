@@ -43,5 +43,7 @@ if [[ $? -ne 0 ]]; then
   cat $ARTIFACT_DIR/test.log
   echo "======================= controller logs ======================="
   ssh "${OPT[@]}" "$HOST" "cd /tmp/olm-addon && rundir=\$(cat run-dir.txt); tail -800 \$rundir/addon-manager.log"
+  ssh "${OPT[@]}" "$HOST" "kubectl get pods -A; kubectl get ManagedClusterAddOn -A -o yaml"
+  
   exit 1
 fi
