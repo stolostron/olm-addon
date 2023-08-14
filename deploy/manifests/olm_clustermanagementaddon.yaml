@@ -7,7 +7,7 @@ metadata:
 spec:
   addOnMeta:
     displayName: OLM Addon
-    description: "olm-addon is a PoC leveraging the addon mechanism to deploy OLM on managed clusters"
+    description: "olm-addon leverages the addon mechanism to deploy OLM on managed clusters"
   # Uncomment the following lines for automated deployment.
   # Follow changes mentioned in kustomization.yaml for Placement creation.
   installStrategy:

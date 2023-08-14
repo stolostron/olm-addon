@@ -42,7 +42,7 @@ metadata:
   name: olm-addon
 spec:
   addOnMeta:
-    description: olm-addon is a PoC leveraging the addon mechanism to deploy OLM on
+    description: olm-addon leverages the addon mechanism to deploy OLM on
       managed clusters
     displayName: OLM Addon
   supportedConfigs:
