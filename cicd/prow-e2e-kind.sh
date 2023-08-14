@@ -41,9 +41,9 @@ ssh "${OPT[@]}" "$HOST" "export GOROOT=/usr/lib/golang; export PATH=\$GOROOT/bin
 if [[ $? -ne 0 ]]; then
   echo "Failure"
   cat $ARTIFACT_DIR/test.log
+  ssh "${OPT[@]}" "$HOST" "rundir=\$(cat /tmp/olm-addon/run-dir.txt); kubectl get pods --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A; kubectl get ManagedClusterAddOn --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A -o yaml"
   echo "======================= controller logs ======================="
   ssh "${OPT[@]}" "$HOST" "cd /tmp/olm-addon && rundir=\$(cat run-dir.txt); tail -800 \$rundir/addon-manager.log"
-  ssh "${OPT[@]}" "$HOST" "kubectl get pods -A; kubectl get ManagedClusterAddOn -A -o yaml"
   
   exit 1
 fi
