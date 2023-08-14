@@ -101,7 +101,7 @@ func ProvisionCluster(t *testing.T) *testCluster {
 		cmd := exec.Command(commandLine[0], commandLine[1:]...)
 		version, err := cmd.CombinedOutput()
 		require.NoError(t, err, "failed retrieving cluster version: %s", string(version))
-		t.Logf("Using existing cluster configured through the environment variable TEST_KUBECONFIG: %s", kcfg)
+		logf(t, "Using existing cluster configured through the environment variable TEST_KUBECONFIG: %s", kcfg)
 		TestCluster.kubeconfig = kcfg
 		TestCluster.started = true
 		TestCluster.ready = true
@@ -126,7 +126,7 @@ func KindCluster(t *testing.T) *testCluster {
 		return TestCluster
 	}
 	if TestCluster.debug {
-		t.Logf("DEBUG environment variable is set to true. Filesystem and cluster will need be be cleaned up manually.")
+		logf(t, "DEBUG environment variable is set to true. Filesystem and cluster will need be be cleaned up manually.")
 	}
 
 	commandLine := []string{"kind", "create", "cluster", "--name", "olm-addon-e2e", "--wait", "60s"}
@@ -140,7 +140,7 @@ func KindCluster(t *testing.T) *testCluster {
 			commandLine := []string{"kind", "delete", "cluster", "--name", "olm-addon-e2e"}
 			cmd := exec.Command(commandLine[0], commandLine[1:]...)
 			if err := cmd.Run(); err != nil {
-				t.Logf("kind cluster could not get deleted: %v", err)
+				logf(t, "kind cluster could not get deleted: %v", err)
 			}
 		})
 	}
@@ -153,7 +153,7 @@ func KindCluster(t *testing.T) *testCluster {
 
 	TestCluster.kubeconfig = path.Join(TestCluster.testDir, "olm-addon-e2e.kubeconfig")
 	TestCluster.ready = true
-	t.Logf("kind cluster ready, artifacts in %s", TestCluster.testDir)
+	logf(t, "kind cluster ready, artifacts in %s", TestCluster.testDir)
 
 	return TestCluster
 }
@@ -245,7 +245,7 @@ func deployRegistrationOperator(t *testing.T) {
 	_, err = ocmClient.ManagedClusters().Update(ctx, managedCluster, metav1.UpdateOptions{})
 	require.NoError(t, err, "failed updating the managedCluster")
 
-	t.Logf("registration operator provisioned")
+	logf(t, "registration operator provisioned")
 }
 
 func deployAddonManager(t *testing.T) {
@@ -305,16 +305,21 @@ func deployOLMAddon(t *testing.T) {
 	err = cmd.Start()
 	TestCluster.cleanFuncs = append(TestCluster.cleanFuncs, func() {
 		if err := cmd.Process.Kill(); err != nil {
-			t.Logf("failed to kill controller: %v", err)
+			logf(t, "failed to kill controller: %v", err)
 		}
 	})
 	require.NoError(t, err, "failed to start olm-addon controller")
-	t.Logf("olm-addon running")
+	logf(t, "olm-addon running")
 }
 
 // cleanup runs the functions for cleaning up in reverse order
 func (tc *testCluster) cleanup() {
+	logf(tc.t, "Cleaning up")
 	for i := range tc.cleanFuncs {
 		tc.cleanFuncs[len(tc.cleanFuncs)-1-i]()
 	}
+}
+
+func logf(t *testing.T, format string, args ...any) {
+	t.Logf("%s: "+format, append([]any{time.Now().Format(time.RFC3339)}, args...)...)
 }
