@@ -177,7 +177,7 @@ func deployOCM(t *testing.T) {
 	if err != nil {
 		if os.IsNotExist(err) {
 
-			commandLine := []string{"curl", "-L", "https://raw.githubusercontent.com/open-cluster-management-io/clusteradm/main/install.sh", "|", "bash"}
+			commandLine := []string{"bash", "-c", "curl -L https://raw.githubusercontent.com/open-cluster-management-io/clusteradm/main/install.sh | bash"}
 			cmd := exec.Command(commandLine[0], commandLine[1:]...)
 			cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
 			output, err := cmd.CombinedOutput()
