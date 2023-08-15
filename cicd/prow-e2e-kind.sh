@@ -41,7 +41,13 @@ ssh "${OPT[@]}" "$HOST" "export GOROOT=/usr/lib/golang; export PATH=\$GOROOT/bin
 if [[ $? -ne 0 ]]; then
   echo "Failure"
   cat $ARTIFACT_DIR/test.log
-  ssh "${OPT[@]}" "$HOST" "rundir=\$(cat /tmp/olm-addon/run-dir.txt); kubectl get pods --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A; kubectl get ManagedClusterAddOn --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A -o yaml"
+  c1="kubectl get pods --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A"
+  c2="kubectl get ManagedClusterAddOn --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A -o yaml"
+  c3="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-placement-controller"
+  c4="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-registration-controller"
+  c5="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-registration-webhook"
+  c6="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-work-webhook"
+  ssh "${OPT[@]}" "$HOST" "rundir=\$(cat /tmp/olm-addon/run-dir.txt); $c1; $c2; $c3; $c4; $c5; $c6"
   echo "======================= controller logs ======================="
   ssh "${OPT[@]}" "$HOST" "cd /tmp/olm-addon && rundir=\$(cat run-dir.txt); tail -800 \$rundir/addon-manager.log"
   
