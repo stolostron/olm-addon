@@ -20,7 +20,7 @@ spec:
       - args:
         - /addon-manager
         - manager
-        image: quay.io/open-cluster-management/addon-manager:latest
+        image: quay.io/open-cluster-management/addon-manager:v0.7.1
         imagePullPolicy: IfNotPresent
         name: addon-manager-controller
         securityContext:

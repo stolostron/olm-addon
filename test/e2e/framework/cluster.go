@@ -8,17 +8,14 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
-	certificatesv1 "k8s.io/api/certificates/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	ocmclientsetv1 "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1"
 
 	"k8s.io/client-go/kubernetes"
 )
@@ -106,7 +103,7 @@ func ProvisionCluster(t *testing.T) *testCluster {
 		TestCluster.started = true
 		TestCluster.ready = true
 	}
-	deployRegistrationOperator(t)
+	deployOCM(t)
 	deployAddonManager(t)
 	deployOLMAddon(t)
 
@@ -158,7 +155,7 @@ func KindCluster(t *testing.T) *testCluster {
 	return TestCluster
 }
 
-func deployRegistrationOperator(t *testing.T) {
+func deployOCM(t *testing.T) {
 
 	cfg := TestCluster.ClientConfig(t)
 	coreClient, err := kubernetes.NewForConfig(cfg)
@@ -175,77 +172,59 @@ func deployRegistrationOperator(t *testing.T) {
 		require.Fail(t, "failed getting the deployment of the cluster-manager", "error: %v", err)
 	}
 
-	// Cloning the registration-operator repo.
-	_, err = os.Stat(path.Join(TestCluster.baseDir, registrationOperatorDirName))
+	// Installing clusteradm
+	_, err = os.Stat("/usr/local/bin/clusteradm")
 	if err != nil {
 		if os.IsNotExist(err) {
-			commandLine := []string{"git", "clone", registrationOperatorRepo, path.Join(TestCluster.baseDir, registrationOperatorDirName)}
+
+			commandLine := []string{"curl", "-L", "https://raw.githubusercontent.com/open-cluster-management-io/clusteradm/main/install.sh", "|", "bash"}
 			cmd := exec.Command(commandLine[0], commandLine[1:]...)
+			cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
 			output, err := cmd.CombinedOutput()
-			require.NoError(t, err, "failed cloning the git repository of the registration operator: %s", string(output))
+			require.NoError(t, err, "failed installing clusteradm: %s", string(output))
 		} else {
-			require.Fail(t, "failed retrieving the git repository of the registration operator", "error: %v", err)
+			require.Fail(t, "failed checking clusteradm availability", "error: %v", err)
 		}
 	}
 
-	// Checking out the release branch
-	// TODO: Make it configurable
-	commandLine := []string{"git", "checkout", "release-0.11"}
+	// Installing OCM hub components (latest released version)
+	commandLine := []string{"clusteradm", "init", "--wait"}
 	cmd := exec.Command(commandLine[0], commandLine[1:]...)
 	cmd.Dir = path.Join(TestCluster.baseDir, registrationOperatorDirName)
+	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
 	output, err := cmd.CombinedOutput()
-	require.NoError(t, err, "failed checking out the git branch: %s", string(output))
+	require.NoError(t, err, "failed installing OCM hub components: %s", string(output))
 
-	// Deploying the registration-operator
-	commandLine = []string{"make", "deploy"}
+	// Getting the command line for joining the hub
+	commandLine = []string{"bash", "-c", "clusteradm get token | grep clusteradm"}
 	cmd = exec.Command(commandLine[0], commandLine[1:]...)
 	cmd.Dir = path.Join(TestCluster.baseDir, registrationOperatorDirName)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("IMAGE_TAG=%s", "v0.11.0"))
 	output, err = cmd.CombinedOutput()
-	require.NoError(t, err, "failed deploying the registration operator: %s", string(output))
+	require.NoError(t, err, "failed making the hosting cluster to join OCM hub: %s", string(output))
+	joincmd := output
 
-	// Approving the CSR
-	var csrList *certificatesv1.CertificateSigningRequestList
-	require.Eventually(t, func() bool {
-		csrList, err = coreClient.CertificatesV1().CertificateSigningRequests().List(
-			ctx,
-			metav1.ListOptions{LabelSelector: " open-cluster-management.io/cluster-name=cluster1"},
-		)
-		// require.NoError(t, err, "failed to list CSRs")
-		return len(csrList.Items) > 0
-	}, 60*time.Second, 100*time.Millisecond, "expected a CSR")
-	addApproval := true
-	for _, condition := range csrList.Items[0].Status.Conditions {
-		if condition.Type == certificatesv1.CertificateApproved {
-			condition.Status = corev1.ConditionTrue
-			addApproval = false
-		}
-	}
-	if addApproval {
-		csrList.Items[0].Status.Conditions = append(csrList.Items[0].Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
-			Type:           certificatesv1.CertificateApproved,
-			Status:         corev1.ConditionTrue,
-			Reason:         "provisioning workflow of the registration operator as part of olm-addon e2e tests",
-			Message:        "This CSR was approved automatically",
-			LastUpdateTime: metav1.Now(),
-		})
-	}
-	_, err = coreClient.CertificatesV1().CertificateSigningRequests().UpdateApproval(ctx, csrList.Items[0].Name, &csrList.Items[0], metav1.UpdateOptions{})
-	require.NoError(t, err, "failed approving the csr")
+	// Making the hosting cluster to join OCM hub
+	command := strings.Replace(strings.TrimSuffix(string(joincmd[:]), "\n"), "<cluster_name>", "cluster1", -1)
+	commandLine = []string{"bash", "-c", fmt.Sprintf("%s --force-internal-endpoint-lookup --wait", command)}
+	cmd = exec.Command(commandLine[0], commandLine[1:]...)
+	cmd.Dir = path.Join(TestCluster.baseDir, registrationOperatorDirName)
+	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
+	output, err = cmd.CombinedOutput()
+	require.NoError(t, err, "failed making the hosting cluster to join OCM hub: %s", string(output))
 
-	// Patching the managedcluster
-	ocmClient, err := ocmclientsetv1.NewForConfig(cfg)
-	require.NoError(t, err, "failed creating a client for OCM CRDs")
-	managedCluster, err := ocmClient.ManagedClusters().Get(ctx, "cluster1", metav1.GetOptions{})
-	require.NoError(t, err, "failed retrieving the managedCluster")
-	managedCluster.Spec.HubAcceptsClient = true
-	managedCluster.Spec.ManagedClusterClientConfigs[0].URL = "https://kubernetes.default.svc"
-	_, err = ocmClient.ManagedClusters().Update(ctx, managedCluster, metav1.UpdateOptions{})
-	require.NoError(t, err, "failed updating the managedCluster")
+	// Making the hub to accept the hosting cluster
+	commandLine = []string{"clusteradm", "accept", "--clusters", "cluster1", "--wait"}
+	cmd = exec.Command(commandLine[0], commandLine[1:]...)
+	cmd.Dir = path.Join(TestCluster.baseDir, registrationOperatorDirName)
+	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
+	output, err = cmd.CombinedOutput()
+	require.NoError(t, err, "failed making the hub to accept the hosting cluster: %s", string(output))
 
-	logf(t, "registration operator provisioned")
+	logf(t, "OCM provisioned")
 }
 
 func deployAddonManager(t *testing.T) {
@@ -273,7 +252,7 @@ func deployAddonManager(t *testing.T) {
 
 	// Set the addon-manager image tag
 	// TODO: Make it configurable
-	commandLine = []string{"kubectl", "patch", "deployment", "-n", "open-cluster-management-hub", "addon-manager-controller", "--type=json", "-p=[{\"op\": \"replace\", \"path\": \"/spec/template/spec/containers/0/image\", \"value\": \"quay.io/open-cluster-management/addon-manager:v0.7.0\"}]"}
+	commandLine = []string{"kubectl", "patch", "deployment", "-n", "open-cluster-management-hub", "addon-manager-controller", "--type=json", "-p=[{\"op\": \"replace\", \"path\": \"/spec/template/spec/containers/0/image\", \"value\": \"quay.io/open-cluster-management/addon-manager:v0.7.1\"}]"}
 	cmd = exec.Command(commandLine[0], commandLine[1:]...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
