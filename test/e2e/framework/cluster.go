@@ -34,9 +34,6 @@ type testCluster struct {
 
 const (
 	basePath = ".olm-addon"
-	// registrationOperatorRepo    = "git@github.com:open-cluster-management-io/registration-operator.git"
-	registrationOperatorRepo    = "https://github.com/open-cluster-management-io/registration-operator.git"
-	registrationOperatorDirName = "registration-operator"
 )
 
 var TestCluster *testCluster
@@ -163,7 +160,7 @@ func deployOCM(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Check whether the registration operator is already available
+	// Check whether OCM is already available
 	_, err = coreClient.AppsV1().Deployments("open-cluster-management").Get(ctx, "cluster-manager", metav1.GetOptions{})
 	if err == nil {
 		// cluster-manager already available, nothing to do here
@@ -190,7 +187,6 @@ func deployOCM(t *testing.T) {
 	// Installing OCM hub components (latest released version)
 	commandLine := []string{"clusteradm", "init", "--wait"}
 	cmd := exec.Command(commandLine[0], commandLine[1:]...)
-	cmd.Dir = path.Join(TestCluster.baseDir, registrationOperatorDirName)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "failed installing OCM hub components: %s", string(output))
@@ -198,7 +194,6 @@ func deployOCM(t *testing.T) {
 	// Getting the command line for joining the hub
 	commandLine = []string{"bash", "-c", "clusteradm get token | grep clusteradm"}
 	cmd = exec.Command(commandLine[0], commandLine[1:]...)
-	cmd.Dir = path.Join(TestCluster.baseDir, registrationOperatorDirName)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
 	output, err = cmd.CombinedOutput()
@@ -209,7 +204,6 @@ func deployOCM(t *testing.T) {
 	command := strings.Replace(strings.TrimSuffix(string(joincmd[:]), "\n"), "<cluster_name>", "cluster1", -1)
 	commandLine = []string{"bash", "-c", fmt.Sprintf("%s --force-internal-endpoint-lookup --wait", command)}
 	cmd = exec.Command(commandLine[0], commandLine[1:]...)
-	cmd.Dir = path.Join(TestCluster.baseDir, registrationOperatorDirName)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
 	output, err = cmd.CombinedOutput()
@@ -218,7 +212,6 @@ func deployOCM(t *testing.T) {
 	// Making the hub to accept the hosting cluster
 	commandLine = []string{"clusteradm", "accept", "--clusters", "cluster1", "--wait"}
 	cmd = exec.Command(commandLine[0], commandLine[1:]...)
-	cmd.Dir = path.Join(TestCluster.baseDir, registrationOperatorDirName)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("KUBECONFIG=%s", TestCluster.kubeconfig))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
 	output, err = cmd.CombinedOutput()
