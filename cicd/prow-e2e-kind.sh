@@ -47,7 +47,7 @@ if [[ $? -ne 0 ]]; then
   c4="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-registration-controller"
   c5="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-registration-webhook"
   c6="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-work-webhook"
-  ssh "${OPT[@]}" "$HOST" "rundir=\$(cat /tmp/olm-addon/run-dir.txt); $c1; $c2; $c3; $c4; $c5; $c6"
+  ssh "${OPT[@]}" "$HOST" "rundir=\$(cat /tmp/olm-addon/run-dir.txt); echo $c1; $c1; echo $c2; $c2; echo $c3; $c3; echo $c4; $c4; echo $c5; $c5; echo $c6; $c6"
   echo "======================= controller logs ======================="
   ssh "${OPT[@]}" "$HOST" "cd /tmp/olm-addon && rundir=\$(cat run-dir.txt); tail -800 \$rundir/addon-manager.log"
   
