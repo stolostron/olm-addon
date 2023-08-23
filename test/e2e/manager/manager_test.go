@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -29,8 +30,9 @@ func TestInstallation(t *testing.T) {
 	// check that OLM is getting deployed automatically through the placement rule
 	addonClient, err := addonclientsetv1.NewForConfig(cluster.ClientConfig(t))
 	require.NoError(t, err, "failed creating a client for addon-framework CRDs")
+	addon := &addonapiv1alpha1.ManagedClusterAddOn{}
 	require.Eventually(t, func() bool {
-		addon, err := addonClient.ManagedClusterAddOns("cluster1").Get(ctx, "olm-addon", metav1.GetOptions{})
+		addon, err = addonClient.ManagedClusterAddOns("cluster1").Get(ctx, "olm-addon", metav1.GetOptions{})
 		if err != nil {
 			return false
 		}
@@ -47,6 +49,49 @@ func TestInstallation(t *testing.T) {
 		}
 		return DeplConditionIsTrue(packageServerDepl.Status.Conditions, appsv1.DeploymentAvailable)
 	}, 60*time.Second, 100*time.Millisecond, "expected the packageserver deployment to have the minimum number of replicas available")
+
+	// Use an AddonDeploymentConfig to change the OLM version
+	olmImage := os.Getenv("OLM_IMAGE")
+	if olmImage == "" {
+		olmImage = "quay.io/operator-framework/olm@sha256:163bacd69001fea0c666ecf8681e9485351210cde774ee345c06f80d5a651473"
+	}
+	// and for the ConfigMap server
+	cmsImage := os.Getenv("CMS_IMAGE")
+	if cmsImage == "" {
+		cmsImage = "quay.io/operator-framework/configmap-operator-registry:v1.27.0"
+	}
+	adc := addOnDeploymentConfig(olmImage, cmsImage)
+	_, err = addonClient.AddOnDeploymentConfigs("cluster1").Create(ctx, adc, metav1.CreateOptions{})
+	require.NoError(t, err, "failed creating the addondeploymentconfig")
+	require.Eventually(t, func() bool {
+		addon, err = addonClient.ManagedClusterAddOns("cluster1").Get(ctx, "olm-addon", metav1.GetOptions{})
+		if err != nil {
+			return false
+		}
+		addon.Spec.Configs = []addonapiv1alpha1.AddOnConfig{
+			{
+				ConfigGroupResource: addonapiv1alpha1.ConfigGroupResource{
+					Group:    "addon.open-cluster-management.io",
+					Resource: "addondeploymentconfigs",
+				},
+				ConfigReferent: addonapiv1alpha1.ConfigReferent{
+					Name:      "olm-addon-latest-ci-olm",
+					Namespace: "cluster1",
+				},
+			},
+		}
+		_, err = addonClient.ManagedClusterAddOns("cluster1").Update(ctx, addon, metav1.UpdateOptions{})
+		return err == nil
+	}, 60*time.Second, 100*time.Millisecond, "failed updating the managedclusteraddon")
+
+	require.Eventually(t, func() bool {
+		olmDepl, err := coreClient.AppsV1().Deployments("olm").Get(ctx, "olm-operator", metav1.GetOptions{})
+		if err != nil {
+			return false
+		}
+		return DeplConditionIsTrue(olmDepl.Status.Conditions, appsv1.DeploymentAvailable) &&
+			olmDepl.Spec.Template.Spec.Containers[0].Image == olmImage
+	}, 60*time.Second, 100*time.Millisecond, "expected the olm-operator deployment to have the new image and the minimum number of replicas available")
 
 	// Uninstall by making the managedcluster label not matching the placement rule anymore
 	ocmClient, err := ocmclientsetv1.NewForConfig(cluster.ClientConfig(t))
@@ -86,4 +131,26 @@ func DeplConditionIsTrue(conditions []appsv1.DeploymentCondition, t appsv1.Deplo
 		}
 	}
 	return false
+}
+
+func addOnDeploymentConfig(olmImage, cmsImage string) *addonapiv1alpha1.AddOnDeploymentConfig {
+
+	return &addonapiv1alpha1.AddOnDeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "olm-addon-latest-ci-olm",
+			Namespace: "cluster1",
+		},
+		Spec: addonapiv1alpha1.AddOnDeploymentConfigSpec{
+			CustomizedVariables: []addonapiv1alpha1.CustomizedVariable{
+				{
+					Name:  "OLMImage",
+					Value: olmImage,
+				},
+				{
+					Name:  "ConfigMapServerImage",
+					Value: cmsImage,
+				},
+			},
+		},
+	}
 }
