@@ -17,9 +17,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/stolostron/olm-addon/test/e2e/framework"
+
 	addonapiv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclientsetv1 "open-cluster-management.io/api/client/addon/clientset/versioned/typed/addon/v1alpha1"
 	ocmclientsetv1 "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1"
+
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	olmclientsetv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 )
 
 func TestInstallation(t *testing.T) {
@@ -93,6 +97,28 @@ func TestInstallation(t *testing.T) {
 			olmDepl.Spec.Template.Spec.Containers[0].Image == olmImage
 	}, 60*time.Second, 100*time.Millisecond, "expected the olm-operator deployment to have the new image and the minimum number of replicas available")
 
+	// Installation of a catalog and an operator
+	catalogImage := os.Getenv("CATALOG_IMAGE")
+	if catalogImage == "" {
+		catalogImage = "ghcr.io/complianceascode/compliance-operator-catalog:latest"
+	}
+	operator := os.Getenv("OPERATOR")
+	if operator == "" {
+		operator = "compliance-operator"
+	}
+	olmClient, err := olmclientsetv1alpha1.NewForConfig(cluster.ClientConfig(t))
+	_, err = olmClient.CatalogSources("olm").Create(ctx, catalogSource(catalogImage), metav1.CreateOptions{})
+	require.NoError(t, err, "failed creating the catalogsource")
+	_, err = olmClient.Subscriptions("olm").Create(ctx, subscription(operator), metav1.CreateOptions{})
+	require.NoError(t, err, "failed creating the subscription")
+	require.Eventually(t, func() bool {
+		sub, err := olmClient.Subscriptions("olm").Get(ctx, "test-subscription", metav1.GetOptions{})
+		if err != nil {
+			return false
+		}
+		return sub.Status.State == operatorsv1alpha1.SubscriptionStateAtLatest
+	}, 120*time.Second, 100*time.Millisecond, "expected the subscription to be with state at latest")
+
 	// Uninstall by making the managedcluster label not matching the placement rule anymore
 	ocmClient, err := ocmclientsetv1.NewForConfig(cluster.ClientConfig(t))
 	require.NoError(t, err, "failed creating a client for OCM CRDs")
@@ -151,6 +177,44 @@ func addOnDeploymentConfig(olmImage, cmsImage string) *addonapiv1alpha1.AddOnDep
 					Value: cmsImage,
 				},
 			},
+		},
+	}
+}
+
+func catalogSource(catalogImage string) *operatorsv1alpha1.CatalogSource {
+	return &operatorsv1alpha1.CatalogSource{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       operatorsv1alpha1.CatalogSourceKind,
+			APIVersion: operatorsv1alpha1.CatalogSourceCRDAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-catalog",
+			Namespace: "olm",
+		},
+		Spec: operatorsv1alpha1.CatalogSourceSpec{
+			SourceType: "grpc",
+			Image:      catalogImage,
+			GrpcPodConfig: &operatorsv1alpha1.GrpcPodConfig{
+				SecurityContextConfig: operatorsv1alpha1.Restricted,
+			},
+		},
+	}
+}
+
+func subscription(operator string) *operatorsv1alpha1.Subscription {
+	return &operatorsv1alpha1.Subscription{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       operatorsv1alpha1.SubscriptionKind,
+			APIVersion: operatorsv1alpha1.SubscriptionCRDAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-subscription",
+			Namespace: "olm",
+		},
+		Spec: &operatorsv1alpha1.SubscriptionSpec{
+			CatalogSource:          "test-catalog",
+			CatalogSourceNamespace: "olm",
+			Package:                operator,
 		},
 	}
 }
