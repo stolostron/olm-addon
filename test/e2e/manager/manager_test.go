@@ -109,15 +109,21 @@ func TestInstallation(t *testing.T) {
 	olmClient, err := olmclientsetv1alpha1.NewForConfig(cluster.ClientConfig(t))
 	_, err = olmClient.CatalogSources("olm").Create(ctx, catalogSource(catalogImage), metav1.CreateOptions{})
 	require.NoError(t, err, "failed creating the catalogsource")
-	_, err = olmClient.Subscriptions("olm").Create(ctx, subscription(operator), metav1.CreateOptions{})
+	subscription, err := olmClient.Subscriptions("olm").Create(ctx, subscription(operator), metav1.CreateOptions{})
 	require.NoError(t, err, "failed creating the subscription")
 	require.Eventually(t, func() bool {
-		sub, err := olmClient.Subscriptions("olm").Get(ctx, "test-subscription", metav1.GetOptions{})
+		subscription, err = olmClient.Subscriptions("olm").Get(ctx, "test-subscription", metav1.GetOptions{})
 		if err != nil {
 			return false
 		}
-		return sub.Status.State == operatorsv1alpha1.SubscriptionStateAtLatest
+		return subscription.Status.State == operatorsv1alpha1.SubscriptionStateAtLatest
 	}, 120*time.Second, 100*time.Millisecond, "expected the subscription to be with state at latest")
+
+	// Uninstall of the operator
+	err = olmClient.Subscriptions("olm").Delete(ctx, subscription.Name, metav1.DeleteOptions{})
+	require.NoError(t, err, "failed deleting the subscription")
+	err = olmClient.ClusterServiceVersions("olm").Delete(ctx, subscription.Status.CurrentCSV, metav1.DeleteOptions{})
+	require.NoError(t, err, "failed deleting the clusterserviceversion")
 
 	// Uninstall by making the managedcluster label not matching the placement rule anymore
 	ocmClient, err := ocmclientsetv1.NewForConfig(cluster.ClientConfig(t))
@@ -132,7 +138,7 @@ func TestInstallation(t *testing.T) {
 	require.Eventually(t, func() bool {
 		_, err = coreClient.CoreV1().Namespaces().Get(ctx, "olm", metav1.GetOptions{})
 		return err != nil && apierrors.IsNotFound(err)
-	}, 180*time.Second, 100*time.Millisecond, "expected OLM to be uninstalled and the olm namespace removed")
+	}, 300*time.Second, 100*time.Millisecond, "expected OLM to be uninstalled and the olm namespace removed")
 }
 
 func ConditionIsTrue(conditions []metav1.Condition, t string) bool {
