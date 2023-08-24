@@ -24,7 +24,7 @@ elif [[ "$system" == "Darwin" ]]; then
 fi
 ssh "${OPT[@]}" "$HOST" "chmod +x ./kubectl; sudo mv ./kubectl /usr/bin/kubectl; kubectl version"
 
-# Install the kind v0.20.0
+# Install kind v0.20.0
 if [[ "$system" == "Linux" ]]; then
     ssh "${OPT[@]}" "$HOST" "curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64"
 elif [[ "$system" == "Darwin" ]]; then
