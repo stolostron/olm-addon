@@ -36,20 +36,33 @@ ssh "${OPT[@]}" "$HOST" "chmod +x ./kind; sudo mv ./kind /usr/bin/kind; kind ver
 ssh "${OPT[@]}" "$HOST" "sudo sh -c 'echo \"fs.inotify.max_user_watches=2097152\" >> /etc/sysctl.conf && echo \"fs.inotify.max_user_instances=1024\" >> /etc/sysctl.conf && sysctl -p /etc/sysctl.conf'"
 
 echo "running e2e tests"
+echo "OLM image: $OLM_IMAGE"
+echo "CMS image: $CMS_IMAGE"
+
+if [[ -n "$OLM_IMAGE"   &&  -n "$CMS_IMAGE" ]]; then
+    ssh "${OPT[@]}" "$HOST" "docker pull $OLM_IMAGE; docker pull $CMS_IMAGE"
+    OLM_IMAGE_ID=${OLM_IMAGE%%@*}
+    CMS_IMAGE_ID=${CMS_IMAGE%%@*}
+    OLM_IMAGE_NEW="${OLM_IMAGE_ID%%:*}:test"
+    CMS_IMAGE_NEW="${CMS_IMAGE_ID%%:*}:test"
+    ssh "${OPT[@]}" "$HOST" "docker tag $OLM_IMAGE $OLM_IMAGE_NEW; docker tag $CMS_IMAGE $CMS_IMAGE_NEW"
+    ssh "${OPT[@]}" "$HOST" "/usr/bin/kind load docker-image $OLM_IMAGE_NEW; /usr/bin/kind load docker-image $CMS_IMAGE_NEW"
+fi
+
 set -o pipefail
-ssh "${OPT[@]}" "$HOST" "export GOROOT=/usr/lib/golang; export PATH=\$GOROOT/bin:/usr/local/bin:\$PATH; echo \$PATH && cd /tmp/olm-addon && go version && kind version && go mod download && make build && export DEBUG=true; export UNFLAKE=true; make e2e" 2>&1 | tee $ARTIFACT_DIR/test.log
+ssh "${OPT[@]}" "$HOST" "export GOROOT=/usr/lib/golang; export PATH=\$GOROOT/bin:/usr/local/bin:\$PATH; echo \$PATH && cd /tmp/olm-addon && go version && kind version && go mod download && make build && export DEBUG=true; export UNFLAKE=true; export OLM_IMAGE=$OLM_IMAGE_NEW; export CMS_IMAGE=$CMS_IMAGE_NEW; make e2e" 2>&1 | tee $ARTIFACT_DIR/test.log
 if [[ $? -ne 0 ]]; then
-  echo "Failure"
-  cat $ARTIFACT_DIR/test.log
-  c1="kubectl get pods --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A"
-  c2="kubectl get ManagedClusterAddOn --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A -o yaml"
-  c3="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-placement-controller"
-  c4="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-registration-controller"
-  c5="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-registration-webhook"
-  c6="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-work-webhook"
-  ssh "${OPT[@]}" "$HOST" "rundir=\$(cat /tmp/olm-addon/run-dir.txt); echo $c1; $c1; echo $c2; $c2; echo $c3; $c3; echo $c4; $c4; echo $c5; $c5; echo $c6; $c6"
-  echo "======================= controller logs ======================="
-  ssh "${OPT[@]}" "$HOST" "cd /tmp/olm-addon && rundir=\$(cat run-dir.txt); tail -800 \$rundir/addon-manager.log"
-  
+    echo "Failure"
+    cat $ARTIFACT_DIR/test.log
+    c1="kubectl get pods --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A"
+    c2="kubectl get ManagedClusterAddOn --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -A -o yaml"
+    c3="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-placement-controller"
+    c4="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-registration-controller"
+    c5="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-registration-webhook"
+    c6="kubectl logs --kubeconfig=\$rundir/olm-addon-e2e.kubeconfig -n open-cluster-management-hub deployments/cluster-manager-work-webhook"
+    ssh "${OPT[@]}" "$HOST" "rundir=\$(cat /tmp/olm-addon/run-dir.txt); echo $c1; $c1; echo $c2; $c2; echo $c3; $c3; echo $c4; $c4; echo $c5; $c5; echo $c6; $c6"
+    echo "======================= controller logs ======================="
+    ssh "${OPT[@]}" "$HOST" "cd /tmp/olm-addon && rundir=\$(cat run-dir.txt); tail -800 \$rundir/addon-manager.log"
+ 
   exit 1
 fi
