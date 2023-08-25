@@ -30,6 +30,7 @@ func TestInstallation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	cluster := framework.ProvisionCluster(t)
+	unflake := os.Getenv("UNFLAKE") == "true"
 
 	// check that OLM is getting deployed automatically through the placement rule
 	addonClient, err := addonclientsetv1.NewForConfig(cluster.ClientConfig(t))
@@ -137,7 +138,15 @@ func TestInstallation(t *testing.T) {
 	require.NoError(t, err, "failed deleting the ManagedClusterAddOn resource to uninstall OLM")
 	require.Eventually(t, func() bool {
 		_, err = coreClient.CoreV1().Namespaces().Get(ctx, "olm", metav1.GetOptions{})
-		return err != nil && apierrors.IsNotFound(err)
+		if err != nil && apierrors.IsNotFound(err) {
+			return true
+		} else {
+			if unflake {
+				_, err = coreClient.AppsV1().Deployments("olm").Get(ctx, "catalog-operator", metav1.GetOptions{})
+				return err != nil && apierrors.IsNotFound(err)
+			}
+			return false
+		}
 	}, 300*time.Second, 100*time.Millisecond, "expected OLM to be uninstalled and the olm namespace removed")
 }
 
