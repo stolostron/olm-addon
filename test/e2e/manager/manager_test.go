@@ -65,6 +65,9 @@ func TestInstallation(t *testing.T) {
 	if cmsImage == "" {
 		cmsImage = "quay.io/operator-framework/configmap-operator-registry:v1.27.0"
 	}
+	framework.Logf(t, "OLM image %s", olmImage)
+	framework.Logf(t, "CMS image %s", cmsImage)
+
 	adc := addOnDeploymentConfig(olmImage, cmsImage)
 	_, err = addonClient.AddOnDeploymentConfigs("cluster1").Create(ctx, adc, metav1.CreateOptions{})
 	require.NoError(t, err, "failed creating the addondeploymentconfig")
