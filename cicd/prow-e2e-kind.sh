@@ -39,18 +39,8 @@ echo "running e2e tests"
 echo "OLM image: $OLM_IMAGE"
 echo "CMS image: $CMS_IMAGE"
 
-if [[ -n "$OLM_IMAGE"   &&  -n "$CMS_IMAGE" ]]; then
-    ssh "${OPT[@]}" "$HOST" "docker pull $OLM_IMAGE; docker pull $CMS_IMAGE"
-    OLM_IMAGE_ID=${OLM_IMAGE%%@*}
-    CMS_IMAGE_ID=${CMS_IMAGE%%@*}
-    OLM_IMAGE_NEW="${OLM_IMAGE_ID%%:*}:test"
-    CMS_IMAGE_NEW="${CMS_IMAGE_ID%%:*}:test"
-    ssh "${OPT[@]}" "$HOST" "docker tag $OLM_IMAGE $OLM_IMAGE_NEW; docker tag $CMS_IMAGE $CMS_IMAGE_NEW"
-    ssh "${OPT[@]}" "$HOST" "/usr/bin/kind load docker-image $OLM_IMAGE_NEW; /usr/bin/kind load docker-image $CMS_IMAGE_NEW"
-fi
-
 set -o pipefail
-ssh "${OPT[@]}" "$HOST" "export GOROOT=/usr/lib/golang; export PATH=\$GOROOT/bin:/usr/local/bin:\$PATH; echo \$PATH && cd /tmp/olm-addon && go version && kind version && go mod download && make build && export DEBUG=true; export UNFLAKE=true; export OLM_IMAGE=$OLM_IMAGE_NEW; export CMS_IMAGE=$CMS_IMAGE_NEW; make e2e" 2>&1 | tee $ARTIFACT_DIR/test.log
+ssh "${OPT[@]}" "$HOST" "export GOROOT=/usr/lib/golang; export PATH=\$GOROOT/bin:/usr/local/bin:\$PATH; echo \$PATH && cd /tmp/olm-addon && go version && kind version && go mod download && make build && export DEBUG=true; export UNFLAKE=true; export OLM_IMAGE=$OLM_IMAGE; export CMS_IMAGE=$CMS_IMAGE; make e2e" 2>&1 | tee $ARTIFACT_DIR/test.log
 if [[ $? -ne 0 ]]; then
     echo "Failure"
     cat $ARTIFACT_DIR/test.log
